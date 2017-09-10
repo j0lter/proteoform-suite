@@ -5,6 +5,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace ProteoformSuiteGUI
 {
@@ -39,6 +40,7 @@ namespace ProteoformSuiteGUI
             cb_buildAsQuantitative.Checked = false;
             cmbx_geneLabel.SelectedIndex = Lollipop.gene_name_labels.IndexOf(Lollipop.preferred_gene_label);
             cb_geneCentric.Checked = Lollipop.gene_centric_families;
+            
         }
 
         public void InitializeParameterSet()
@@ -60,6 +62,7 @@ namespace ProteoformSuiteGUI
             cmbx_geneLabel.SelectedIndex = 1;
             Lollipop.preferred_gene_label = cmbx_geneLabel.SelectedItem.ToString();
             Lollipop.gene_centric_families = cb_geneCentric.Checked;
+            
 
             cmbx_tableSelector.SelectedIndexChanged -= cmbx_tableSelector_SelectedIndexChanged;
             cmbx_tableSelector.SelectedIndex = 0;
@@ -69,12 +72,10 @@ namespace ProteoformSuiteGUI
             tb_tableFilter.Text = "";
             tb_tableFilter.TextChanged += tb_tableFilter_TextChanged;
 
-            initialize_every_time();
-        }
+            cb_remove_bad_relations.Checked = Sweet.lollipop.remove_bad_relations;
+            cb_count_adducts_as_id.Checked = Sweet.lollipop.count_adducts_as_identifications;
 
-        public List<DataGridView> GetDGVs()
-        {
-            return new List<DataGridView> { dgv_main };
+            initialize_every_time();
         }
 
         public List<DataTable> SetTables()
@@ -88,10 +89,22 @@ namespace ProteoformSuiteGUI
             return Sweet.lollipop.target_proteoform_community.has_e_proteoforms;
         }
 
-        public void RunTheGamut()
+        public void RunTheGamut(bool full_run)
         {
             ClearListsTablesFigures(true);
+            //reaccept relations in peaks --> may have unaccepted if previously removed bad relations
+            Parallel.ForEach(Sweet.lollipop.et_relations.Concat(Sweet.lollipop.ee_relations).Concat(Sweet.lollipop.ed_relations.Values.SelectMany(d => d)).Concat(Sweet.lollipop.ef_relations.Values.SelectMany(d => d)),
+                r => r.Accepted = r.peak != null ? r.peak.Accepted : false);
             Sweet.lollipop.construct_target_and_decoy_families();
+            if(Sweet.lollipop.remove_bad_relations)
+            {
+                Parallel.ForEach(Sweet.lollipop.decoy_proteoform_communities.Values.Concat(new List<ProteoformCommunity> { Sweet.lollipop.target_proteoform_community }).SelectMany(c => c.families.Where(f => f.theoretical_proteoforms.Count > 0).SelectMany(f => f.relations)), r =>
+                {
+                    if ((r.connected_proteoforms[0].linked_proteoform_references == null && r.connected_proteoforms[1].linked_proteoform_references != null) || (r.connected_proteoforms[1].linked_proteoform_references == null && r.connected_proteoforms[0].linked_proteoform_references != null)) r.Accepted = false;
+                });
+                ClearListsTablesFigures(true);
+                Sweet.lollipop.construct_target_and_decoy_families();
+            }
             cmbx_tableSelector.SelectedIndex = 0;
             tb_tableFilter.Text = "";
             FillTablesAndCharts();
@@ -127,18 +140,16 @@ namespace ProteoformSuiteGUI
         {
             rtb_proteoformFamilyResults.Text = ResultsSummaryGenerator.proteoform_families_report();
 
+            cmbx_tableSelector.Items.Clear();
+            cmbx_tableSelector.Items.AddRange(table_names);
             //change selected table names based on # decoy communities
             int decoy_communities = Sweet.lollipop.decoy_proteoform_communities.Count;
             for(int i = 0; i < decoy_communities; i++)
             {
                if (!cmbx_tableSelector.Items.Contains("Decoy Community " + i)) cmbx_tableSelector.Items.Add("Decoy Community " + i);
             }
-
-            //if more items than decoy databases, remove later ones //FIX   
-            while(cmbx_tableSelector.Items.Count - 5 - decoy_communities > 0)
-            {
-                cmbx_tableSelector.Items.RemoveAt(5 + decoy_communities);
-            }
+            cmbx_tableSelector.SelectedIndex = 0;
+           
         }
 
         #endregion Public Methods
@@ -247,6 +258,16 @@ namespace ProteoformSuiteGUI
                 else dgv_proteoform_family_members.Rows.Clear();
             }
 
+            else if (new List<string> { nameof(DisplayProteoformFamily.topdown_count) }.Contains(dgv_main.Columns[column_index].Name))
+            {
+                if (selected_family.experimental_proteoforms.Count(p => p.topdown_id) > 0)
+                {
+                    DisplayUtility.FillDataGridView(dgv_proteoform_family_members, selected_family.experimental_proteoforms.Where(p => p.topdown_id).Select(td => new DisplayTopDownProteoform(td as TopDownProteoform)));
+                    DisplayTopDownProteoform.FormatTopDownTable(dgv_proteoform_family_members, false);
+                }
+                else dgv_proteoform_family_members.Rows.Clear();
+            }
+
             else if (dgv_main.Columns[column_index].Name == nameof(DisplayProteoformFamily.relation_count))
             {
                 if (selected_family.relations.Count > 0)
@@ -329,7 +350,7 @@ namespace ProteoformSuiteGUI
             if (ReadyToRunTheGamut())
             {
                 Cursor = Cursors.WaitCursor;
-                RunTheGamut();
+                RunTheGamut(false);
                 Cursor = Cursors.Default;
             }
         }
@@ -399,9 +420,19 @@ namespace ProteoformSuiteGUI
             Lollipop.gene_centric_families = cb_geneCentric.Checked;
         }
 
+        private void cb_count_adducts_as_id_CheckedChanged(object sender, EventArgs e)
+        {
+            Sweet.lollipop.count_adducts_as_identifications = cb_count_adducts_as_id.Checked;
+            update_figures_of_merit();
+        }
+
         private void cmbx_empty_TextChanged(object sender, EventArgs e) { }
 
         #endregion Private Methods
 
+        private void cb_remove_bad_relations_CheckedChanged(object sender, EventArgs e)
+        {
+            Sweet.lollipop.remove_bad_relations = cb_remove_bad_relations.Checked;
+        }
     }
 }

@@ -35,7 +35,7 @@ namespace ProteoformSuiteGUI
             return true;
         }
 
-        public void RunTheGamut()
+        public void RunTheGamut(bool full_run)
         {
             ClearListsTablesFigures(true);
 
@@ -45,8 +45,8 @@ namespace ProteoformSuiteGUI
 
             Parallel.Invoke
             (
-                () => Sweet.lollipop.process_raw_components(Sweet.lollipop.input_files, Sweet.lollipop.raw_experimental_components, Purpose.Identification),
-                () => Sweet.lollipop.process_raw_components(Sweet.lollipop.input_files, Sweet.lollipop.raw_quantification_components, Purpose.Quantification)
+                () => Sweet.lollipop.process_raw_components(Sweet.lollipop.input_files, Sweet.lollipop.raw_experimental_components, Purpose.Identification, true),
+                () => Sweet.lollipop.process_raw_components(Sweet.lollipop.input_files, Sweet.lollipop.raw_quantification_components, Purpose.Quantification, true)
             );
 
             FillTablesAndCharts();
@@ -73,7 +73,7 @@ namespace ProteoformSuiteGUI
                 for (int i = ((ProteoformSweet)MdiParent).forms.IndexOf(this) + 1; i < ((ProteoformSweet)MdiParent).forms.Count; i++)
                 {
                     ISweetForm sweet = ((ProteoformSweet)MdiParent).forms[i];
-                    if (sweet as TheoreticalDatabase == null)
+                    if (sweet as TopDown == null)
                         sweet.ClearListsTablesFigures(false);
                 }
             }
@@ -85,11 +85,6 @@ namespace ProteoformSuiteGUI
             dgv_fileList.DataSource = null;
             dgv_rawComponents.DataSource = null;
             dgv_chargeStates.DataSource = null;
-        }
-
-        public List<DataGridView> GetDGVs()
-        {
-            return new List<DataGridView> { dgv_rawComponents };
         }
 
         public List<DataTable> SetTables()
@@ -120,7 +115,7 @@ namespace ProteoformSuiteGUI
 
             NeuCodePairs pairs_form = (MdiParent as ProteoformSweet).neuCodePairs;
             if (Sweet.lollipop.neucode_labeled && pairs_form.ReadyToRunTheGamut())
-                pairs_form.RunTheGamut();
+                pairs_form.RunTheGamut(false);
         }
 
         #endregion Public Methods
@@ -157,7 +152,7 @@ namespace ProteoformSuiteGUI
         private void bt_recalculate_Click(object sender, EventArgs e)
         {
             Cursor = Cursors.WaitCursor;
-            RunTheGamut();
+            RunTheGamut(false);
             Cursor = Cursors.Default;
         }
 

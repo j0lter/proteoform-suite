@@ -104,6 +104,26 @@ namespace ProteoformSuiteGUI
             }
         }
 
+        public string theoretical_accession
+        {
+            get
+            {
+                return e.linked_proteoform_references != null ?
+                   (e.linked_proteoform_references[0] as TheoreticalProteoform).accession:
+                    "";
+            }
+        }
+
+        public string Fragment
+        {
+            get
+            {
+                return e.linked_proteoform_references != null ?
+                   (e.linked_proteoform_references[0] as TheoreticalProteoform).fragment :
+                    "";
+            }
+        }
+
         public string manual_validation_id
         {
             get { return e.manual_validation_id; }
@@ -119,6 +139,28 @@ namespace ProteoformSuiteGUI
             get { return e.manual_validation_quant; }
         }
 
+        //needs to be at same time and mass
+        public bool topdown_id
+        {
+            get { return e.topdown_id; }
+        }
+
+        public bool Adduct
+        {
+            get
+            {
+                return e.adduct;
+            }
+        }
+
+        public bool Ambiguous
+        {
+            get
+            {
+                return e.ambiguous;
+            }
+        }
+        
         #endregion Public Properties
 
         #region Public Methods
@@ -165,9 +207,11 @@ namespace ProteoformSuiteGUI
             if (property_name == nameof(mass_shifted)) return "Manually Shifted Mass";
             if (property_name == nameof(ptm_description)) return "PTM Description";
             if (property_name == nameof(gene_name)) return "Gene Name";
+            if (property_name == nameof(theoretical_accession)) return "Theoretical Accession";
             if (property_name == nameof(manual_validation_id)) return "Abundant Component for Manual Validation of Identification";
             if (property_name == nameof(manual_validation_verification)) return "Abundant Component for Manual Validation of Identification Verification";
             if (property_name == nameof(manual_validation_quant)) return "Abundant Component for Manual Validation of Quantification";
+            if (property_name == nameof(topdown_id)) return "Top-Down Proteoform";
             return null;
         }
 

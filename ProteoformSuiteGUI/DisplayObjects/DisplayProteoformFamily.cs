@@ -54,6 +54,16 @@ namespace ProteoformSuiteGUI
             get { return f.theoretical_proteoforms.Count; }
         }
 
+        public int topdown_count
+        {
+            get { return f.experimental_proteoforms.Count(e => e.topdown_id); }
+        }
+        
+        public int gene_count
+        {
+            get { return f.gene_names.Select(p => p.get_prefered_name(Lollipop.preferred_gene_label)).Where(n => n != null).Distinct().Count(); }
+        }
+
         public string accession_list
         {
             get { return f.accession_list; }
@@ -84,7 +94,6 @@ namespace ProteoformSuiteGUI
 
             dgv.ReadOnly = true;
 
-
             foreach (DataGridViewColumn c in dgv.Columns)
             {
                 string h = header(c.Name);
@@ -113,6 +122,8 @@ namespace ProteoformSuiteGUI
             if (property_name ==nameof(gene_list)) return "Gene Names";
             if (property_name ==nameof(experimentals_list)) return "Experimental Accessions";
             if (property_name ==nameof(agg_mass_list)) return "Experimental Aggregated Masses";
+            if (property_name == nameof(topdown_count)) return "Top-Down Proteoforms";
+            if (property_name == nameof(gene_count)) return "Gene Count";
             return null;
         }
 

@@ -95,6 +95,20 @@ namespace Test
         }
 
         [Test]
+        public void nodes_table_gives_meaningful_topdown()
+        {
+            TopDownProteoform t = ConstructorsForTesting.TopDownProteoform("ACC", 999.99, 50);
+            ProteoformFamily f = new ProteoformFamily(t);
+            f.construct_family();
+            string node_table = CytoscapeScript.get_cytoscape_nodes_tsv(new List<ProteoformFamily> { f },
+              null,
+              CytoscapeScript.color_scheme_names[0], Lollipop.edge_labels[0], Lollipop.node_labels[0], Lollipop.node_positioning[0], 2,
+              f.theoretical_proteoforms, false, Lollipop.gene_name_labels[1]);
+            Assert.True(node_table.Contains("ACC"));
+            Assert.True(node_table.Contains("999.99"));
+        }
+
+        [Test]
         public void test_write_families_no_experimentals_which_shouldnt_happen()
         {
             List<ProteoformFamily> f = new List<ProteoformFamily> { new ProteoformFamily(ConstructorsForTesting.make_a_theoretical()) };
@@ -178,6 +192,7 @@ namespace Test
         [Test]
         public void cytoscape_edges_and_nodes_match()
         {
+            Sweet.lollipop = new Lollipop();
             ProteoformCommunity community = TestProteoformFamilies.construct_two_families_with_potentially_colliding_theoreticals();
             Sweet.lollipop.target_proteoform_community = community;
             IEnumerable<TheoreticalProteoform> theoreticals = community.families.SelectMany(f => f.theoretical_proteoforms);
@@ -214,6 +229,7 @@ namespace Test
         [Test]
         public void cytoscape_script_from_theoreticals()
         {
+            Sweet.lollipop = new Lollipop();
             ProteoformCommunity community = TestProteoformFamilies.construct_two_families_with_potentially_colliding_theoreticals();
             Sweet.lollipop.target_proteoform_community = community;
             CytoscapeScript.write_cytoscape_script(community.families.SelectMany(f => f.theoretical_proteoforms.Where(t => t.ExpandedProteinList.Select(p => p.FullName).Contains(TestProteoformFamilies.p1_fullName))).ToArray(), community.families, 
@@ -248,6 +264,7 @@ namespace Test
         [Test]
         public void cytoscape_script_from_goterm()
         {
+            Sweet.lollipop = new Lollipop();
             ProteoformCommunity community = TestProteoformFamilies.construct_two_families_with_potentially_colliding_theoreticals();
             Sweet.lollipop.target_proteoform_community = community;
             CytoscapeScript.write_cytoscape_script(new GoTerm[] { TestProteoformFamilies.p1_goterm }, community.families, 
@@ -282,6 +299,7 @@ namespace Test
         [Test]
         public void cytoscape_script_from_gotermnumber()
         {
+            Sweet.lollipop = new Lollipop();
             ProteoformCommunity community = TestProteoformFamilies.construct_two_families_with_potentially_colliding_theoreticals();
             Sweet.lollipop.target_proteoform_community = community;
             CytoscapeScript.write_cytoscape_script(new GoTermNumber[] { new GoTermNumber(TestProteoformFamilies.p1_goterm, 0,0,0,0) }, community.families,
@@ -316,6 +334,7 @@ namespace Test
         [Test]
         public void cytoscape_script_from_quantValues()
         {
+            Sweet.lollipop = new Lollipop();
             ProteoformCommunity community = TestProteoformFamilies.construct_two_families_with_potentially_colliding_theoreticals();
             Sweet.lollipop.target_proteoform_community = community;
             CytoscapeScript.write_cytoscape_script(community.families.SelectMany(f => f.experimental_proteoforms.Select(ex => ex.quant)).ToArray(), community.families, 
@@ -349,6 +368,7 @@ namespace Test
         [Test]
         public void cytoscape_script_from_subset_of_families()
         {
+            Sweet.lollipop = new Lollipop();
             ProteoformCommunity community = TestProteoformFamilies.construct_two_families_with_potentially_colliding_theoreticals();
             Sweet.lollipop.target_proteoform_community = community;
             CytoscapeScript.write_cytoscape_script(new List<ProteoformFamily> { community.families[0] }, community.families, 

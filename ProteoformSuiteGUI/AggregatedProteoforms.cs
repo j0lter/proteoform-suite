@@ -56,20 +56,28 @@ namespace ProteoformSuiteGUI
 
         private void display_light_proteoforms()
         {
-            List<IAggregatable> components = selected_pf == null ? new List<IAggregatable>() :
-                rb_displayIdentificationComponents.Checked ?
-                selected_pf.aggregated :
-                rb_displayLightQuantificationComponents.Checked ?
-                    selected_pf.lt_quant_components.ToList<IAggregatable>() :
-                    selected_pf.hv_quant_components.ToList<IAggregatable>();
-            if (Sweet.lollipop.neucode_labeled && rb_displayIdentificationComponents.Checked)
-                DisplayUtility.FillDataGridView(dgv_AcceptNeuCdLtProteoforms, components.Select(c => new DisplayNeuCodePair(c as NeuCodePair)));
+            if (selected_pf == null || (selected_pf != null && !selected_pf.topdown_id))
+            {
+                List<IAggregatable> components = selected_pf == null ? new List<IAggregatable>() :
+                    rb_displayIdentificationComponents.Checked ?
+                    selected_pf.aggregated :
+                    rb_displayLightQuantificationComponents.Checked ?
+                        selected_pf.lt_quant_components.ToList<IAggregatable>() :
+                        selected_pf.hv_quant_components.ToList<IAggregatable>();
+                if (Sweet.lollipop.neucode_labeled && rb_displayIdentificationComponents.Checked)
+                    DisplayUtility.FillDataGridView(dgv_AcceptNeuCdLtProteoforms, components.Select(c => new DisplayNeuCodePair(c as NeuCodePair)));
+                else
+                    DisplayUtility.FillDataGridView(dgv_AcceptNeuCdLtProteoforms, components.Select(c => new DisplayComponent(c as Component)));
+                if (Sweet.lollipop.neucode_labeled && rb_displayIdentificationComponents.Checked)
+                    DisplayNeuCodePair.FormatNeuCodeTable(dgv_AcceptNeuCdLtProteoforms);
+                else
+                    DisplayComponent.FormatComponentsTable(dgv_AcceptNeuCdLtProteoforms);
+            }
             else
-                DisplayUtility.FillDataGridView(dgv_AcceptNeuCdLtProteoforms, components.Select(c => new DisplayComponent(c as Component)));
-            if (Sweet.lollipop.neucode_labeled && rb_displayIdentificationComponents.Checked)
-                DisplayNeuCodePair.FormatNeuCodeTable(dgv_AcceptNeuCdLtProteoforms);
-            else
-                DisplayComponent.FormatComponentsTable(dgv_AcceptNeuCdLtProteoforms);
+            {
+                DisplayUtility.FillDataGridView(dgv_AcceptNeuCdLtProteoforms, (selected_pf as TopDownProteoform).topdown_hits.Select(h => new DisplayTopDownHit(h)));
+                DisplayTopDownHit.FormatTopDownHitsTable(dgv_AcceptNeuCdLtProteoforms);
+            }
         }
 
         private void rb_displayIdentificationComponents_CheckedChanged(object sender, EventArgs e)
@@ -120,7 +128,7 @@ namespace ProteoformSuiteGUI
             if (ReadyToRunTheGamut())
             {
                 Cursor = Cursors.WaitCursor;
-                RunTheGamut();
+                RunTheGamut(false);
                 Cursor = Cursors.Default;
             }
             else if (Sweet.lollipop.target_proteoform_community.experimental_proteoforms.Length <= 0)
@@ -165,24 +173,16 @@ namespace ProteoformSuiteGUI
 
         public bool ReadyToRunTheGamut()
         {
-            return Sweet.lollipop.neucode_labeled && Sweet.lollipop.raw_neucode_pairs.Count > 0 || Sweet.lollipop.raw_experimental_components.Count > 0;
+            return Sweet.lollipop.topdown_proteoforms.Count > 0 || ( Sweet.lollipop.neucode_labeled && Sweet.lollipop.raw_neucode_pairs.Count > 0 || Sweet.lollipop.raw_experimental_components.Count > 0 );
         }
 
-        public void RunTheGamut()
+        public void RunTheGamut(bool full_run)
         {
             ClearListsTablesFigures(true);
             Sweet.lollipop.aggregate_proteoforms(Sweet.lollipop.validate_proteoforms, Sweet.lollipop.raw_neucode_pairs, Sweet.lollipop.raw_experimental_components, Sweet.lollipop.raw_quantification_components, Sweet.lollipop.min_num_CS);
             Sweet.lollipop.assign_best_components_for_manual_validation(Sweet.lollipop.target_proteoform_community.experimental_proteoforms);
             FillTablesAndCharts();
             updateFiguresOfMerit();
-        }
-
-        public List<DataGridView> GetDGVs()
-        {
-            return new List<DataGridView>
-            {
-                dgv_AggregatedProteoforms
-            };
         }
 
         public List<DataTable> SetTables()
@@ -223,8 +223,7 @@ namespace ProteoformSuiteGUI
                 for (int i = ((ProteoformSweet)MdiParent).forms.IndexOf(this) + 1; i < ((ProteoformSweet)MdiParent).forms.Count; i++)
                 {
                     ISweetForm sweet = ((ProteoformSweet)MdiParent).forms[i];
-                    if (sweet as TheoreticalDatabase == null)
-                        sweet.ClearListsTablesFigures(false);
+                    sweet.ClearListsTablesFigures(false);
                 }
             }
 

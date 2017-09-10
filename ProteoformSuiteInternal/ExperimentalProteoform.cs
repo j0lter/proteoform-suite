@@ -35,7 +35,7 @@ namespace ProteoformSuiteInternal
 
         public List<BiorepTechrepIntensity> biorepTechrepIntensityList { get; set; } = new List<BiorepTechrepIntensity>();
 
-        public List<BiorepFractionTechrepIntensity> bftIntensityList { get; set; } = new List<BiorepFractionTechrepIntensity>(); 
+        public List<BiorepFractionTechrepIntensity> bftIntensityList { get; set; } = new List<BiorepFractionTechrepIntensity>();
 
         public QuantitativeProteoformValues quant { get; set; }
 
@@ -49,11 +49,17 @@ namespace ProteoformSuiteInternal
 
         public bool mass_shifted { get; set; } = false; //make sure in ET if shifting multiple peaks, not shifting same E > once. 
 
-        public string manual_validation_id { get; set; }
+        public string manual_validation_id { get; set; } = "";
 
-        public string manual_validation_verification { get; set; }
+        public string manual_validation_verification { get; set; } = "";
 
-        public string manual_validation_quant { get; set; }
+        public string manual_validation_quant { get; set; } = "";
+
+        public bool topdown_id { get; set; }
+
+        public bool adduct { get; set; } 
+
+        public bool ambiguous { get; set; }
 
         #endregion Public Properties
 
@@ -162,7 +168,8 @@ namespace ProteoformSuiteInternal
 
         #endregion
 
-        #region Aggregation Public Methods
+        
+#region Aggregation Public Methods
 
         public void aggregate()
         {
@@ -216,7 +223,7 @@ namespace ProteoformSuiteInternal
         //impact of this difference as of 160812. -AC
         public bool includes(IAggregatable candidate, IAggregatable root)
         {
-            return tolerable_rt(candidate, root.rt_apex) && tolerable_mass(candidate, root.weighted_monoisotopic_mass)
+            return tolerable_rt(candidate, root.rt_apex) && tolerable_mass(candidate.weighted_monoisotopic_mass, root.weighted_monoisotopic_mass)
                 && (candidate as NeuCodePair == null || tolerable_lysCt(candidate as NeuCodePair, (root as NeuCodePair).lysine_count));
         }
 
@@ -228,7 +235,6 @@ namespace ProteoformSuiteInternal
         }
 
         #endregion Aggregation Public Methods
-
         #region Aggregation Private Methods
 
         private bool tolerable_rt(IAggregatable candidate, double rt_apex)
@@ -243,7 +249,7 @@ namespace ProteoformSuiteInternal
             return acceptable_lysineCts.Contains(candidate.lysine_count);
         }
 
-        private bool tolerable_mass(IAggregatable candidate, double corrected_mass)
+        private bool tolerable_mass(double candidate_mass, double corrected_mass)
         {
             foreach (int missed_mono_count in Sweet.lollipop.missed_monoisotopics_range)
             {
@@ -252,7 +258,7 @@ namespace ProteoformSuiteInternal
                 double mass_tolerance = shifted_mass / 1000000 * Sweet.lollipop.mass_tolerance;
                 double low = shifted_mass - mass_tolerance;
                 double high = shifted_mass + mass_tolerance;
-                bool tolerable_mass = candidate.weighted_monoisotopic_mass >= low && candidate.weighted_monoisotopic_mass <= high;
+                bool tolerable_mass = candidate_mass >= low && candidate_mass <= high;
                 if (tolerable_mass)
                     return true; //Return a true result immediately; acts as an OR between these conditions
             }
@@ -327,16 +333,19 @@ namespace ProteoformSuiteInternal
 
         public void shift_masses(int shift, bool neucode_labeled)
         {
-            foreach (IAggregatable c in aggregated)
+            if (!topdown_id)
             {
-                if (neucode_labeled)
+                foreach (IAggregatable c in aggregated)
                 {
-                    (c as NeuCodePair).neuCodeLight.manual_mass_shift += shift * Lollipop.MONOISOTOPIC_UNIT_MASS;
-                    (c as NeuCodePair).neuCodeHeavy.manual_mass_shift += shift * Lollipop.MONOISOTOPIC_UNIT_MASS;
-                }
-                else
-                {
-                    (c as Component).manual_mass_shift += shift * Lollipop.MONOISOTOPIC_UNIT_MASS;
+                    if (neucode_labeled)
+                    {
+                        (c as NeuCodePair).neuCodeLight.manual_mass_shift += shift * Lollipop.MONOISOTOPIC_UNIT_MASS;
+                        (c as NeuCodePair).neuCodeHeavy.manual_mass_shift += shift * Lollipop.MONOISOTOPIC_UNIT_MASS;
+                    }
+                    else
+                    {
+                        (c as Component).manual_mass_shift += shift * Lollipop.MONOISOTOPIC_UNIT_MASS;
+                    }
                 }
             }
 

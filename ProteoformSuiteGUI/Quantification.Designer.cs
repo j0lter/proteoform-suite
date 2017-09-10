@@ -1041,6 +1041,7 @@
             // 
             this.tb_FDR.Location = new System.Drawing.Point(104, 130);
             this.tb_FDR.Name = "tb_FDR";
+            this.tb_FDR.ReadOnly = true;
             this.tb_FDR.Size = new System.Drawing.Size(124, 20);
             this.tb_FDR.TabIndex = 6;
             // 

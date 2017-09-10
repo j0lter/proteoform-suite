@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+
 namespace ProteoformSuiteGUI
 {
     public partial class LoadDeconvolutionResults : Form, ISweetForm
@@ -37,12 +38,9 @@ namespace ProteoformSuiteGUI
             tb_resultsFolder.Text = Sweet.lollipop.results_folder;
             rb_neucode.Checked = Sweet.lollipop.neucode_labeled;
             rb_unlabeled.Checked = !rb_neucode.Checked;
+            nud_randomSeed.Value = Sweet.lollipop.calibration_random_seed;
+            cb_useRandomSeed.Checked = Sweet.lollipop.calibration_use_random_seed;
             ((ProteoformSweet)MdiParent).enable_neuCodeProteoformPairsToolStripMenuItem(Sweet.lollipop.neucode_labeled);
-        }
-
-        public List<DataGridView> GetDGVs()
-        {
-            return new List<DataGridView> { dgv_loadFiles1, dgv_loadFiles2, dgv_loadFiles3 };
         }
 
         public List<DataTable> SetTables()
@@ -50,8 +48,14 @@ namespace ProteoformSuiteGUI
             DataTables = new List<DataTable>();
             if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.Identification).Count() > 0)
                 DataTables.Add(DisplayInputFile.FormatInputFileTable(Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.Identification).Select(x => new DisplayInputFile(x)).ToList(), "IdentificationFiles", new List<Purpose> { Purpose.Identification }));
-            if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.Calibration).Count() > 0)
-                DataTables.Add(DisplayInputFile.FormatInputFileTable(Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.Calibration).Select(x => new DisplayInputFile(x)).ToList(), "CalibrationFiles", new List<Purpose> { Purpose.Calibration }));
+            if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.CalibrationIdentification).Count() > 0)
+                DataTables.Add(DisplayInputFile.FormatInputFileTable(Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.CalibrationIdentification).Select(x => new DisplayInputFile(x)).ToList(), "CalibrationIdentificationFiles", new List<Purpose> { Purpose.CalibrationIdentification }));
+            if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.CalibrationTopDown).Count() > 0)
+                DataTables.Add(DisplayInputFile.FormatInputFileTable(Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.CalibrationTopDown).Select(x => new DisplayInputFile(x)).ToList(), "CalibrationTopDownFiles", new List<Purpose> { Purpose.CalibrationTopDown }));
+            if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.TopDown).Count() > 0)
+                DataTables.Add(DisplayInputFile.FormatInputFileTable(Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.TopDown).Select(x => new DisplayInputFile(x)).ToList(), "TopDown", new List<Purpose> { Purpose.TopDown }));
+            if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.BottomUp).Count() > 0)
+                DataTables.Add(DisplayInputFile.FormatInputFileTable(Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.BottomUp).Select(x => new DisplayInputFile(x)).ToList(), "BottomUp", new List<Purpose> { Purpose.BottomUp }));
             if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.Quantification).Count() > 0)
                 DataTables.Add(DisplayInputFile.FormatInputFileTable(Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.Quantification).Select(x => new DisplayInputFile(x)).ToList(), "QuantificationFiles", new List<Purpose> { Purpose.Quantification }));
             if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, new List<Purpose> { Purpose.PtmList, Purpose.ProteinDatabase }).Count() > 0)
@@ -83,7 +87,7 @@ namespace ProteoformSuiteGUI
             return true;
         }
 
-        public void RunTheGamut()
+        public void RunTheGamut(bool full_run)
         {
             populate_file_lists();
         }
@@ -109,21 +113,12 @@ namespace ProteoformSuiteGUI
                 if (rb_neucode.Checked) f.label = Labeling.NeuCode;
                 if (rb_unlabeled.Checked) f.label = Labeling.Unlabeled;
             }
-
-            match_files();
             populate_file_lists();
         }
 
         private void rb_unlabeled_CheckedChanged(object sender, EventArgs e)
         { }
 
-        private void match_files()
-        {
-            string message = Sweet.lollipop.match_calibration_files();
-            refresh_dgvs();
-            if (message != "")
-                MessageBox.Show(message);
-        }
 
         private void rb_standardOptions_CheckedChanged(object sender, EventArgs e)
         {
@@ -136,6 +131,10 @@ namespace ProteoformSuiteGUI
         }
 
         private void rb_advanced_user_CheckedChanged(object sender, EventArgs e)
+        {
+            populate_file_lists();
+        }
+        private void rb_topdown_CheckedChanged(object sender, EventArgs e)
         {
             populate_file_lists();
         }
@@ -152,12 +151,41 @@ namespace ProteoformSuiteGUI
             cmb_loadTable2.SelectedIndex = 1;
             cmb_loadTable3.SelectedIndex = 2;
 
-            if (rb_chemicalCalibration.Checked)
+            cmb_loadTable1.Enabled = true;
+            cmb_loadTable2.Enabled = true;
+            cmb_loadTable3.Enabled = true;
+
+            if (rb_unlabeled.Checked)
             {
                 cmb_loadTable1.SelectedIndex = 0;
-                cmb_loadTable2.SelectedIndex = 1;
-                cmb_loadTable3.SelectedIndex = 3;
+                cmb_loadTable2.SelectedIndex = 3;
+                cmb_loadTable3.SelectedIndex = 2;
             }
+
+            if (rb_chemicalCalibration.Checked)
+            {
+                for (int i = 4; i < 8; i++) cmb_loadTable1.Items.Add(Lollipop.file_lists[i]);
+                for (int i = 4; i < 8; i++) cmb_loadTable2.Items.Add(Lollipop.file_lists[i]);
+                for (int i = 4; i < 8; i++) cmb_loadTable3.Items.Add(Lollipop.file_lists[i]);
+                bt_calibrate.Visible = true;
+                cb_useRandomSeed.Visible = true;
+                nud_randomSeed.Visible = true;
+                cmb_loadTable1.SelectedIndex = 5;
+                cmb_loadTable2.SelectedIndex = 6;
+                cmb_loadTable3.SelectedIndex = 7;
+
+                cmb_loadTable1.Enabled = false;
+                cmb_loadTable2.Enabled = false;
+                cmb_loadTable3.Enabled = false;
+            }
+            else
+            {
+                bt_calibrate.Visible = false;
+                cb_useRandomSeed.Visible = false;
+                nud_randomSeed.Visible = false;
+            }
+
+
 
             lb_filter1.Text = Lollipop.file_lists[cmb_loadTable1.SelectedIndex];
             lb_filter2.Text = Lollipop.file_lists[cmb_loadTable2.SelectedIndex];
@@ -206,7 +234,7 @@ namespace ProteoformSuiteGUI
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
             Sweet.lollipop.enter_input_files(files, Lollipop.acceptable_extensions[cmb.SelectedIndex], Lollipop.file_types[cmb.SelectedIndex], Sweet.lollipop.input_files, true);
-            match_files();
+            refresh_dgvs();
             DisplayUtility.FillDataGridView(dgv, Sweet.lollipop.get_files(Sweet.lollipop.input_files, Lollipop.file_types[cmb.SelectedIndex]).Select(f => new DisplayInputFile(f)));
             DisplayInputFile.FormatInputFileTable(dgv, Lollipop.file_types[cmb.SelectedIndex]);
         }
@@ -296,7 +324,7 @@ namespace ProteoformSuiteGUI
             if (dr == DialogResult.OK)
             {
                 Sweet.lollipop.enter_input_files(openFileDialog.FileNames, Lollipop.acceptable_extensions[cmb.SelectedIndex], Lollipop.file_types[cmb.SelectedIndex], Sweet.lollipop.input_files, true);
-                match_files();
+                refresh_dgvs();
             }
 
             DisplayUtility.FillDataGridView(dgv, Sweet.lollipop.get_files(Sweet.lollipop.input_files, Lollipop.file_types[cmb.SelectedIndex]).Select(f => new DisplayInputFile(f)));
@@ -306,7 +334,6 @@ namespace ProteoformSuiteGUI
         #endregion ADD BUTTONS Private Methods
 
         #region CLEAR BUTTONS Private Methods
-
         private void btn_clearFiles1_Click(object sender, EventArgs e)
         {
             clear_files(cmb_loadTable1, dgv_loadFiles1);
@@ -327,7 +354,7 @@ namespace ProteoformSuiteGUI
             List<InputFile> files_to_remove = Sweet.lollipop.get_files(Sweet.lollipop.input_files, Lollipop.file_types[cmb.SelectedIndex]).ToList();
             Sweet.save_actions.RemoveAll(a => files_to_remove.Any(f => a.Contains(f.complete_path)));
             Sweet.lollipop.input_files = Sweet.lollipop.input_files.Except(files_to_remove).ToList();
-            match_files();
+            refresh_dgvs();
             DisplayUtility.FillDataGridView(dgv, Sweet.lollipop.get_files(Sweet.lollipop.input_files, Lollipop.file_types[cmb.SelectedIndex]).Select(f => new DisplayInputFile(f)));
             DisplayInputFile.FormatInputFileTable(dgv, Lollipop.file_types[cmb.SelectedIndex]);
         }
@@ -343,7 +370,6 @@ namespace ProteoformSuiteGUI
                 + ". Feel free to explore using the Results menu.", "Full Run");
             else MessageBox.Show("Method did not successfully run.", "Full Run");
         }
-
         private void bt_clearResults_Click(object sender, EventArgs e)
         {
             Sweet.lollipop = new Lollipop();
@@ -415,13 +441,26 @@ namespace ProteoformSuiteGUI
             lb_filter3.Text = cmb_loadTable1.SelectedItem.ToString();
         }
 
+        private void bt_calibrate_Click(object sender, EventArgs e)
+        {
+            if (Sweet.lollipop.input_files.Where(f => f.purpose == Purpose.RawFile).Count() == 0)
+            {
+                MessageBox.Show("Please enter raw files to calibrate."); return;
+            }
+            if (Sweet.lollipop.target_proteoform_community.theoretical_proteoforms.Length == 0)
+            {
+                MessageBox.Show("First create a theoretical proteoform database. On the Results tab, select Theoretical Proteoform Database.");
+                return;
+            }
+            Sweet.lollipop.read_in_calibration_td_hits();
+            MessageBox.Show(Sweet.lollipop.calibrate_files());
+        }
+        #endregion CHANGED TABLE SELECTION Private Methods
+
         //Do nothing when text changes
         private void cmb_loadTable1_TextChanged(object sender, EventArgs e) { }
         private void cmb_loadTable2_TextChanged(object sender, EventArgs e) { }
         private void cmb_loadTable3_TextChanged(object sender, EventArgs e) { }
-
-
-        #endregion CHANGED TABLE SELECTION Private Methods
 
         #region CHANGE ALL CELLS private methods
 
@@ -543,5 +582,14 @@ namespace ProteoformSuiteGUI
 
         #endregion Cell Validation Methods
 
+        private void nud_randomSeed_ValueChanged(object sender, EventArgs e)
+        {
+            Sweet.lollipop.calibration_random_seed = (int)nud_randomSeed.Value;
+        }
+
+        private void cb_useRandomSeed_CheckedChanged(object sender, EventArgs e)
+        {
+            Sweet.lollipop.calibration_use_random_seed = cb_useRandomSeed.Checked;
+        }
     }
 }

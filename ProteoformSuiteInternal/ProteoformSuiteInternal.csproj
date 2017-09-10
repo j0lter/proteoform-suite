@@ -48,8 +48,14 @@
     <Reference Include="Chemistry, Version=1.0.217.0, Culture=neutral, processorArchitecture=AMD64">
       <HintPath>..\packages\mzLib.1.0.217\lib\Chemistry.dll</HintPath>
     </Reference>
+    <Reference Include="ClosedXML, Version=0.88.0.0, Culture=neutral, PublicKeyToken=fd1eb21b62ae805b, processorArchitecture=MSIL">
+      <HintPath>..\packages\ClosedXML.0.88.0\lib\net452\ClosedXML.dll</HintPath>
+    </Reference>
     <Reference Include="DocumentFormat.OpenXml, Version=2.7.2.0, Culture=neutral, PublicKeyToken=8fb06cb64d019a17, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.2.7.2\lib\net40\DocumentFormat.OpenXml.dll</HintPath>
+    </Reference>
+    <Reference Include="FastMember.Signed, Version=1.0.0.9, Culture=neutral, PublicKeyToken=9e8f22703bef9a29, processorArchitecture=MSIL">
+      <HintPath>..\packages\FastMember.Signed.1.1.0\lib\net40\FastMember.Signed.dll</HintPath>
     </Reference>
     <Reference Include="ManagedThermoHelperLayer, Version=1.0.217.0, Culture=neutral, processorArchitecture=AMD64">
       <HintPath>..\packages\mzLib.1.0.217\lib\ManagedThermoHelperLayer.dll</HintPath>
@@ -107,6 +113,13 @@
   <ItemGroup>
     <Compile Include="AminoAcidMasses.cs" />
     <Compile Include="BigRational.cs" />
+    <Compile Include="BottomUpReader.cs" />
+    <Compile Include="CalibrationFunctions\CalibrationFunction.cs" />
+    <Compile Include="CalibrationFunctions\ConstantCalibrationFunction.cs" />
+    <Compile Include="CalibrationFunctions\IdentityCalibrationFunction.cs" />
+    <Compile Include="CalibrationFunctions\LinearCalibrationFunctionMathNet.cs" />
+    <Compile Include="CalibrationFunctions\RandomForestCalibrationFunction.cs" />
+    <Compile Include="CalibrationFunctions\RegressionTree.cs" />
     <Compile Include="IAggregatable.cs" />
     <Compile Include="StatisticalAnalysis\GoAnalysis.cs" />
     <Compile Include="Intensities\BiorepFractionTechrepIntensity.cs" />
@@ -114,10 +127,11 @@
     <Compile Include="Intensities\BiorepTechrepIntensity.cs" />
     <Compile Include="ChargeState.cs" />
     <Compile Include="Component.cs" />
-    <Compile Include="Correction.cs" />
     <Compile Include="CytoscapeScript.cs" />
+    <Compile Include="DataPointAcquisitionResults.cs" />
     <Compile Include="DeltaMassPeak.cs" />
     <Compile Include="ComponentReader.cs" />
+    <Compile Include="ExcelReader.cs" />
     <Compile Include="ExperimentalProteoform.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="GeneName.cs" />
@@ -125,6 +139,7 @@
     <Compile Include="GoTerm.cs" />
     <Compile Include="Intensities\IFileIntensity.cs" />
     <Compile Include="IMassDifference.cs" />
+    <Compile Include="LabeledMs1DataPoint.cs" />
     <Compile Include="InputFile.cs" />
     <Compile Include="Intensities\IBiorepIntensity.cs" />
     <Compile Include="StatisticalAnalysis\IGoAnalysis.cs" />
@@ -143,6 +158,10 @@
     <Compile Include="ProteoformCommunity.cs" />
     <Compile Include="ProteoformFamily.cs" />
     <Compile Include="ProteoformRelation.cs" />
+    <Compile Include="BottomUpPSM.cs" />
+    <Compile Include="TopDownReader.cs" />
+    <Compile Include="Calibration.cs" />
+    <Compile Include="TopDownHit.cs" />
     <Compile Include="StatisticalAnalysis\QuantificationDistributions.cs" />
     <Compile Include="StatisticalAnalysis\QuantitativeProteoformValues.cs" />
     <Compile Include="ResultsSummaryGenerator.cs" />
@@ -154,6 +173,8 @@
     <Compile Include="TheoreticalProteoform.cs" />
     <Compile Include="TheoreticalProteoformDatabase.cs" />
     <Compile Include="TheoreticalProteoformGroup.cs" />
+    <Compile Include="TopDownProteoform.cs" />
+    <Compile Include="TransformFunction.cs" />
     <Compile Include="StatisticalAnalysis\TusherAnalysis1.cs" />
     <Compile Include="StatisticalAnalysis\TusherAnalysis2.cs" />
     <Compile Include="StatisticalAnalysis\TusherValues1.cs" />
@@ -167,16 +188,19 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Mods\variable.txt">
+    <Content Include="Mods\amino_acids.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Mods\amino_acids.txt">
+    <Content Include="Mods\custom_mods.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Mods\intact_mods.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Mods\missing.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Mods\variable.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

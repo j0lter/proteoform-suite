@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace ProteoformSuiteInternal
 {
     public class ProteoformCommunity
     {
 
-        #region Public Fields
-
+        #region Public Fields 
+        public int community_number; //-100 for target, decoy database number for decoys
         public ExperimentalProteoform[] experimental_proteoforms = new ExperimentalProteoform[0];
         public TheoreticalProteoform[] theoretical_proteoforms = new TheoreticalProteoform[0];
         public List<ProteoformFamily> families = new List<ProteoformFamily>();
@@ -105,20 +106,20 @@ namespace ProteoformSuiteInternal
         public bool allowed_relation(Proteoform pf1, Proteoform pf2_with_allowed_lysines, ProteoformComparison relation_type)
         {
             if (relation_type == ProteoformComparison.ExperimentalTheoretical || relation_type == ProteoformComparison.ExperimentalDecoy)
-                return 
+                return
                     (pf1.modified_mass - pf2_with_allowed_lysines.modified_mass) >= Sweet.lollipop.et_low_mass_difference
-                    && (pf1.modified_mass - pf2_with_allowed_lysines.modified_mass) <= Sweet.lollipop.et_high_mass_difference
-                    && (pf2_with_allowed_lysines.ptm_set.ptm_combination.Count < 3 || pf2_with_allowed_lysines.ptm_set.ptm_combination.Select(ptm => ptm.modification.monoisotopicMass).All(x => x == pf2_with_allowed_lysines.ptm_set.ptm_combination.First().modification.monoisotopicMass));
+                    && (pf1.modified_mass - pf2_with_allowed_lysines.modified_mass) <= Sweet.lollipop.et_high_mass_difference;
 
             else if (relation_type == ProteoformComparison.ExperimentalExperimental)
-                return 
-                    pf1.modified_mass >= pf2_with_allowed_lysines.modified_mass
+                return
+                    pf1 != pf2_with_allowed_lysines
+                    && pf1.modified_mass >= pf2_with_allowed_lysines.modified_mass
                     && pf1 != pf2_with_allowed_lysines
                     && pf1.modified_mass - pf2_with_allowed_lysines.modified_mass <= Sweet.lollipop.ee_max_mass_difference
                     && Math.Abs((pf1 as ExperimentalProteoform).agg_rt - (pf2_with_allowed_lysines as ExperimentalProteoform).agg_rt) <= Sweet.lollipop.ee_max_RetentionTime_difference;
 
             else if (relation_type == ProteoformComparison.ExperimentalFalse)
-                return 
+                return
                     pf1.modified_mass >= pf2_with_allowed_lysines.modified_mass
                     && pf1 != pf2_with_allowed_lysines
                     && (pf1.modified_mass - pf2_with_allowed_lysines.modified_mass <= Sweet.lollipop.ee_max_mass_difference)
@@ -144,6 +145,7 @@ namespace ProteoformSuiteInternal
             to_shuffle.Shuffle();
             return to_shuffle.Take(Sweet.lollipop.ee_relations.Count).ToList();
         }
+
 
         #endregion BUILDING RELATIONSHIPS
 
@@ -241,7 +243,11 @@ namespace ProteoformSuiteInternal
 
         public List<ProteoformFamily> construct_families()
         {
-            Stack<Proteoform> remaining = new Stack<Proteoform>(this.experimental_proteoforms.Where(e => e.accepted).ToArray());
+            ProteoformFamily.reset_family_counter();
+            List<Proteoform> proteoforms = new List<Proteoform>();
+            proteoforms.AddRange(this.experimental_proteoforms.Where(e => e.accepted).ToList());
+            Parallel.ForEach(experimental_proteoforms, e => e.ambiguous = false); //need to reset all as falsely ambigous
+            Stack<Proteoform> remaining = new Stack<Proteoform>(proteoforms);
             List<ProteoformFamily> running_families = new List<ProteoformFamily>();
             List<Proteoform> running = new List<Proteoform>();
             List<Thread> active = new List<Thread>();
@@ -286,7 +292,7 @@ namespace ProteoformSuiteInternal
             }
             if (Lollipop.gene_centric_families) families = combine_gene_families(families).ToList();
             Parallel.ForEach(families, f => f.identify_experimentals());
-            return families;
+           return families;
         }
 
         public IEnumerable<ProteoformFamily> combine_gene_families(IEnumerable<ProteoformFamily> families)

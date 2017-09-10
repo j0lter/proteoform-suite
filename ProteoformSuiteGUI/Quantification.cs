@@ -39,13 +39,9 @@ namespace ProteoformSuiteGUI
 
         #region Public Methods
 
-        public List<DataGridView> GetDGVs()
-        {
-            return new List<DataGridView> { dgv_quantification_results, dgv_goAnalysis };
-        }
-
         public List<DataTable> SetTables()
         {
+            if(selected_tusher_analysis == null) return new List<DataTable>();
             //Quantification values for selected tusher analysis
             DataTables = new List<DataTable>
             {
@@ -54,7 +50,7 @@ namespace ProteoformSuiteGUI
 
             //Results dataframe for selected tusher analysis
             DataTable results;
-            results = ResultsSummaryGenerator.results_dataframe(selected_tusher_analysis);
+            results = ResultsSummaryGenerator.experimental_results_dataframe(selected_tusher_analysis);
             results.TableName = "Results_" + selected_tusher_analysis.sortedPermutedRelativeDifferences.Count.ToString() + "Perm";
             DataTables.Add(results);
 
@@ -91,7 +87,7 @@ namespace ProteoformSuiteGUI
             return DataTables;
         }
 
-        public void RunTheGamut()
+        public void RunTheGamut(bool full_run)
         {
             ClearListsTablesFigures(true);
             Sweet.lollipop.quantify();
@@ -202,6 +198,45 @@ namespace ProteoformSuiteGUI
             Sweet.lollipop.denominator_condition = cmbx_ratioDenominator.SelectedItem.ToString();
             Sweet.lollipop.induced_condition = cmbx_inducedCondition.SelectedItem.ToString();
             cmbx_edgeLabel.Items.AddRange(Lollipop.edge_labels);
+
+
+
+            // selecting proteoforms for quantification
+            cmbx_observationsTypeRequired.SelectedIndexChanged -= cmbx_observationsTypeRequired_SelectedIndexChanged;
+            cmbx_observationsTypeRequired.Items.AddRange(Lollipop.observation_requirement_possibilities);
+            cmbx_observationsTypeRequired.SelectedIndex = Sweet.lollipop.observation_requirement == new Lollipop().observation_requirement ? // check that the default has not been changed (haven't loaded presets)
+                0 :
+                Lollipop.observation_requirement_possibilities.ToList().IndexOf(Sweet.lollipop.observation_requirement);
+            Sweet.lollipop.observation_requirement = cmbx_observationsTypeRequired.SelectedItem.ToString();
+            cmbx_observationsTypeRequired.SelectedIndexChanged += cmbx_observationsTypeRequired_SelectedIndexChanged;
+
+            nud_minObservations.Minimum = 1;
+            if (Sweet.lollipop.minBiorepsWithObservations == new Lollipop().minBiorepsWithObservations) // check that the default has not been changed (haven't loaded presets)
+            {
+                nud_minObservations.Maximum = Sweet.lollipop.countOfBioRepsInOneCondition;
+                nud_minObservations.Value = Sweet.lollipop.countOfBioRepsInOneCondition;
+            }
+            else
+            {
+                set_nud_minObs_maximum();
+                nud_minObservations.Value = Sweet.lollipop.minBiorepsWithObservations;
+            }
+            Sweet.lollipop.minBiorepsWithObservations = (int)nud_minObservations.Value;
+
+
+            // permutation fold change requirement
+            nud_foldChangeObservations.Minimum = 1;
+            if (Sweet.lollipop.minBiorepsWithFoldChange == new Lollipop().minBiorepsWithFoldChange) // check that the default has not been changed (haven't loaded presets)
+            {
+                nud_foldChangeObservations.Maximum = Sweet.lollipop.countOfBioRepsInOneCondition;
+                nud_foldChangeObservations.Value = Sweet.lollipop.countOfBioRepsInOneCondition;
+            }
+            else
+            {
+                set_nud_minObs_maximum();
+                nud_foldChangeObservations.Value = Sweet.lollipop.minBiorepsWithFoldChange;
+            }
+            Sweet.lollipop.minBiorepsWithFoldChange = (int)nud_foldChangeObservations.Value;
         }
 
         public void InitializeParameterSet()
@@ -304,44 +339,6 @@ namespace ProteoformSuiteGUI
             nud_intensity.Value = get_go_analysis().GoAnalysis.minProteoformIntensity;
             nud_intensity.ValueChanged += new EventHandler(updateGoTermsTable);
 
-
-            // selecting proteoforms for quantification
-            cmbx_observationsTypeRequired.SelectedIndexChanged -= cmbx_observationsTypeRequired_SelectedIndexChanged;
-            cmbx_observationsTypeRequired.Items.AddRange(Lollipop.observation_requirement_possibilities);
-            cmbx_observationsTypeRequired.SelectedIndex = Sweet.lollipop.observation_requirement == new Lollipop().observation_requirement ? // check that the default has not been changed (haven't loaded presets)
-                0 :
-                Lollipop.observation_requirement_possibilities.ToList().IndexOf(Sweet.lollipop.observation_requirement);
-            Sweet.lollipop.observation_requirement = cmbx_observationsTypeRequired.SelectedItem.ToString();
-            cmbx_observationsTypeRequired.SelectedIndexChanged += cmbx_observationsTypeRequired_SelectedIndexChanged;
-
-            nud_minObservations.Minimum = 1;
-            if (Sweet.lollipop.minBiorepsWithObservations == new Lollipop().minBiorepsWithObservations) // check that the default has not been changed (haven't loaded presets)
-            {
-                nud_minObservations.Maximum = Sweet.lollipop.countOfBioRepsInOneCondition;
-                nud_minObservations.Value = Sweet.lollipop.countOfBioRepsInOneCondition;
-            }
-            else
-            {
-                set_nud_minObs_maximum();
-                nud_minObservations.Value = Sweet.lollipop.minBiorepsWithObservations;
-            }
-            Sweet.lollipop.minBiorepsWithObservations = (int)nud_minObservations.Value;
-
-
-            // permutation fold change requirement
-            nud_foldChangeObservations.Minimum = 1;
-            if (Sweet.lollipop.minBiorepsWithFoldChange == new Lollipop().minBiorepsWithFoldChange) // check that the default has not been changed (haven't loaded presets)
-            {
-                nud_foldChangeObservations.Maximum = Sweet.lollipop.countOfBioRepsInOneCondition;
-                nud_foldChangeObservations.Value = Sweet.lollipop.countOfBioRepsInOneCondition;
-            }
-            else
-            {
-                set_nud_minObs_maximum();
-                nud_foldChangeObservations.Value = Sweet.lollipop.minBiorepsWithFoldChange;
-            }
-            Sweet.lollipop.minBiorepsWithFoldChange = (int)nud_foldChangeObservations.Value;
-
             cmbx_foldChangeConjunction.SelectedIndexChanged -= cmbx_foldChangeConjunction_SelectedIndexChanged;
             cmbx_foldChangeConjunction.Items.AddRange(Lollipop.fold_change_conjunction_options);
             cmbx_foldChangeConjunction.SelectedIndex = Lollipop.fold_change_conjunction_options.ToList().IndexOf(Sweet.lollipop.fold_change_conjunction);
@@ -400,7 +397,7 @@ namespace ProteoformSuiteGUI
             if (ReadyToRunTheGamut())
             {
                 Cursor = Cursors.WaitCursor;
-                RunTheGamut();
+                RunTheGamut(false);
                 Cursor = Cursors.Default;
             }
             else if (Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.Quantification).Count() <= 0)
@@ -518,7 +515,7 @@ namespace ProteoformSuiteGUI
 
             if (cmbx_quantitativeValuesTableSelection.SelectedIndex == 1)
             {
-                DisplayUtility.FillDataGridView(dgv_quantification_results, ResultsSummaryGenerator.results_dataframe(get_tusher_analysis()));
+                DisplayUtility.FillDataGridView(dgv_quantification_results, ResultsSummaryGenerator.experimental_results_dataframe(get_tusher_analysis()));
                 return;
             }
 
@@ -647,10 +644,10 @@ namespace ProteoformSuiteGUI
 
             if (get_tusher_analysis().avgSortedPermutationRelativeDifferences.Count > 0 && get_tusher_analysis().sortedProteoformRelativeDifferences.Count > 0)
             {
-                //ct_relativeDifference.ChartAreas[0].AxisX.Minimum = Convert.ToDouble(Math.Floor(SaveState.lollipop.sortedAvgPermutationTestStatistics.First()));
-                //ct_relativeDifference.ChartAreas[0].AxisX.Maximum = Convert.ToDouble(Math.Ceiling(SaveState.lollipop.sortedAvgPermutationTestStatistics.Last()));
-                //ct_relativeDifference.ChartAreas[0].AxisY.Minimum = Math.Min(Convert.ToDouble(Math.Floor(negativeOffsetFunction(SaveState.lollipop.sortedAvgPermutationTestStatistics.First()))), Convert.ToDouble(Math.Floor(SaveState.lollipop.sortedProteoformTestStatistics.First())));
-                //ct_relativeDifference.ChartAreas[0].AxisY.Maximum = Math.Max(Convert.ToDouble(Math.Ceiling(positiveOffsetFunction(SaveState.lollipop.sortedAvgPermutationTestStatistics.Last()))), Convert.ToDouble(Math.Ceiling(SaveState.lollipop.sortedProteoformTestStatistics.Last())));
+                //ct_relativeDifference.ChartAreas[0].AxisX.Minimum = Convert.ToDouble(Math.Floor(Sweet.lollipop.sortedAvgPermutationTestStatistics.First()));
+                //ct_relativeDifference.ChartAreas[0].AxisX.Maximum = Convert.ToDouble(Math.Ceiling(Sweet.lollipop.sortedAvgPermutationTestStatistics.Last()));
+                //ct_relativeDifference.ChartAreas[0].AxisY.Minimum = Math.Min(Convert.ToDouble(Math.Floor(negativeOffsetFunction(Sweet.lollipop.sortedAvgPermutationTestStatistics.First()))), Convert.ToDouble(Math.Floor(Sweet.lollipop.sortedProteoformTestStatistics.First())));
+                //ct_relativeDifference.ChartAreas[0].AxisY.Maximum = Math.Max(Convert.ToDouble(Math.Ceiling(positiveOffsetFunction(Sweet.lollipop.sortedAvgPermutationTestStatistics.Last()))), Convert.ToDouble(Math.Ceiling(Sweet.lollipop.sortedProteoformTestStatistics.Last())));
                 ct_relativeDifference.ChartAreas[0].AxisX.Minimum = -max_test_stat_unit;
                 ct_relativeDifference.ChartAreas[0].AxisX.Maximum = max_test_stat_unit;
                 ct_relativeDifference.ChartAreas[0].AxisY.Minimum = -max_test_stat_unit;

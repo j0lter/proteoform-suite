@@ -30,7 +30,6 @@ namespace Test
             p2.relationships.Add(pp);
             return pp;
         }
-
         
         //MAKE THEORETICAL
         public static TheoreticalProteoform make_a_theoretical(string a, ProteinWithGoTerms p, Dictionary<InputFile, Protein[]> dict)
@@ -112,6 +111,22 @@ namespace Test
             }
             e.root = e.aggregated.OrderByDescending(a => a.intensity_sum).FirstOrDefault();
             return e;
+        }
+
+        //TOPDOWN pROTEOFORM
+        public static TopDownProteoform TopDownProteoform(string accession, double modified_mass, double retention_time)
+        {
+            TopDownHit h = new TopDownHit();
+            h.reported_mass = modified_mass;
+            h.theoretical_mass = modified_mass;
+            h.ms2_retention_time = retention_time;
+            h.sequence = "MSSSSSSSSSS";
+            h.begin = 10;
+            h.end = 20;
+            TopDownProteoform td = new TopDownProteoform(accession, new List<TopDownHit>() { h } );
+            (td as ExperimentalProteoform).topdown_id = true;
+            td.accepted = true;
+            return td;
         }
 
 

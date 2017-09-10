@@ -55,7 +55,7 @@ namespace ProteoformSuiteGUI
         private void btn_Make_Databases_Click(object sender, EventArgs e)
         {
             Cursor = Cursors.WaitCursor;
-            RunTheGamut();
+            RunTheGamut(false);
             Cursor = Cursors.Default;
         }
 
@@ -83,15 +83,6 @@ namespace ProteoformSuiteGUI
             DisplayUtility.FillDataGridView(dgv_Database, Sweet.lollipop.target_proteoform_community.theoretical_proteoforms.Select(t => new DisplayTheoreticalProteoform(t)));
             initialize_table_bindinglist();
             DisplayTheoreticalProteoform.FormatTheoreticalProteoformTable(dgv_Database);
-        }
-
-        public List<DataGridView> GetDGVs()
-        {
-            return new List<DataGridView>
-            {
-                dgv_Database,
-                dgv_unlocalizedModifications
-            };
         }
 
         public List<DataTable> SetTables()
@@ -165,12 +156,16 @@ namespace ProteoformSuiteGUI
             tb_totalTheoreticalProteoforms.Text = Sweet.lollipop.target_proteoform_community.theoretical_proteoforms.Length.ToString();
         }
 
-        public void RunTheGamut()
+        public void RunTheGamut(bool full_run)
         {
             ClearListsTablesFigures(true);
             Sweet.lollipop.theoretical_database.get_theoretical_proteoforms(Environment.CurrentDirectory);
-            tb_totalTheoreticalProteoforms.Text = Sweet.lollipop.target_proteoform_community.theoretical_proteoforms.Length.ToString();
             FillTablesAndCharts();
+            if (!full_run && BottomUpReader.bottom_up_PTMs_not_in_dictionary.Count() > 0)
+            {
+                MessageBox.Show("Warning: the following PTMs in the .mzid file were not matched with any PTMs in the theoretical database: " +
+                    String.Join(", ", BottomUpReader.bottom_up_PTMs_not_in_dictionary.Distinct()));
+            }
         }
 
         public bool ReadyToRunTheGamut()
@@ -186,13 +181,18 @@ namespace ProteoformSuiteGUI
             dgv_loadFiles.Rows.Clear();
             dgv_unlocalizedModifications.DataSource = null;
             dgv_unlocalizedModifications.Rows.Clear();
-
+            tb_modTableFilter.Clear();
+            tb_tableFilter.Clear();
+            tb_totalTheoreticalProteoforms.Clear();
             if (clear_following)
             {
                 for (int i = ((ProteoformSweet)MdiParent).forms.IndexOf(this) + 1; i < ((ProteoformSweet)MdiParent).forms.Count; i++)
                 {
                     ISweetForm sweet = ((ProteoformSweet)MdiParent).forms[i];
-                    sweet.ClearListsTablesFigures(false);
+                    if (sweet as RawExperimentalComponents == null)
+                    {
+                        sweet.ClearListsTablesFigures(false);
+                    }
                 }
             }
         }
@@ -205,6 +205,7 @@ namespace ProteoformSuiteGUI
             DisplayTheoreticalProteoform.FormatTheoreticalProteoformTable(dgv_Database);
             DisplayUtility.FillDataGridView(dgv_unlocalizedModifications, Sweet.lollipop.theoretical_database.unlocalized_lookup.Values.Select(m => new DisplayUnlocalizedModification(m)));
             DisplayUnlocalizedModification.FormatUnlocalizedModificationTable(dgv_unlocalizedModifications);
+            tb_totalTheoreticalProteoforms.Text = Sweet.lollipop.target_proteoform_community.theoretical_proteoforms.Length.ToString();
         }
 
         #endregion Public Methods

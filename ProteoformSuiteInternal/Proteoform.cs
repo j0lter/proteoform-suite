@@ -17,7 +17,7 @@ namespace ProteoformSuiteInternal
         public bool is_target { get; set; } = true;
         public List<Proteoform> candidate_relatives { get; set; } // Cleared after use
         public GeneName gene_name { get; set; }
-        public string ptm_description { get; set; }
+        public string ptm_description { get; set; } = "";
         public PtmSet ptm_set
         {
             get
@@ -31,7 +31,7 @@ namespace ProteoformSuiteInternal
                 ptm_description = ptm_set == null || ptm_set.ptm_combination == null ? 
                     "Unknown" : 
                     ptm_set.ptm_combination.Count == 0 ?
-                        "Unmodified" :
+                        "Unmodified" : 
                         String.Join("; ", ptm_set.ptm_combination.Select(ptm => Sweet.lollipop.theoretical_database.unlocalized_lookup.TryGetValue(ptm.modification, out UnlocalizedModification x) ? x.id : ptm.modification.id).ToList());
             }
         }
@@ -95,7 +95,7 @@ namespace ProteoformSuiteInternal
                 string theoretical_base_sequence = theoretical_base != null ? theoretical_base.sequence : "";
 
                 List<PtmSet> possible_additions = r.peak.possiblePeakAssignments.Where(p => Math.Abs(p.mass - deltaM) <= 1).ToList(); // EE relations have PtmSets around both positive and negative deltaM, so remove the ones around the opposite of the deltaM of interest
-                PtmSet best_addition = generate_possible_added_ptmsets(possible_additions, deltaM, mass_tolerance, all_mods_with_mass, theoretical_base, theoretical_base_sequence, 1)
+                PtmSet best_addition = generate_possible_added_ptmsets(possible_additions, deltaM, mass_tolerance, all_mods_with_mass, theoretical_base, 1)
                     .OrderBy(x => (double)x.ptm_rank_sum + Math.Abs(x.mass - deltaM) * 10E-6) // major score: delta rank; tie breaker: deltaM, where it's always less than 1
                     .FirstOrDefault();
 
@@ -116,7 +116,7 @@ namespace ProteoformSuiteInternal
                 // If they're the same and someone hasn't labeled 0 difference with a "ModificationWithMass", then label it null
                 if (best_addition == null && best_loss == null && Math.Abs(r.peak.DeltaMass) <= mass_tolerance)
                 {
-                    lock (r) lock (e) assign_pf_identity(e, this, ptm_set, r, sign, null);
+                    lock (r) lock (e) assign_pf_identity(e, ptm_set, r, sign, null);
                     identified.Add(e);
                 }
 
@@ -140,20 +140,20 @@ namespace ProteoformSuiteInternal
                 }
 
                 lock (r) lock (e)
-                    assign_pf_identity(e, this, with_mod_change, r, sign, best_loss != null ? best_loss : best_addition);
+                        assign_pf_identity(e, with_mod_change, r, sign, best_loss != null ? best_loss : best_addition);
                 identified.Add(e);
             }
             return identified;
         }
 
         public List<PtmSet> generate_possible_added_ptmsets(List<PtmSet> possible_peak_assignments, double deltaM, double mass_tolerance, List<ModificationWithMass> all_mods_with_mass,
-            TheoreticalProteoform theoretical_base, string theoretical_base_sequence, int additional_ptm_penalty)
+            TheoreticalProteoform theoretical_base, int additional_ptm_penalty)
         {
             List<ModificationWithMass> known_mods = theoretical_base.ExpandedProteinList.SelectMany(p => p.OneBasedPossibleLocalizedModifications.ToList()).SelectMany(kv => kv.Value).OfType<ModificationWithMass>().ToList();
             List<PtmSet> possible_ptmsets = new List<PtmSet>();
 
-            int n_terminal_degraded_aas = degraded_aas_count(theoretical_base_sequence, ptm_set, true);
-            int c_terminal_degraded_aas = degraded_aas_count(theoretical_base_sequence, ptm_set, false);
+            int n_terminal_degraded_aas = degraded_aas_count(theoretical_base.sequence, ptm_set, true);
+            int c_terminal_degraded_aas = degraded_aas_count(theoretical_base.sequence, ptm_set, false);
             foreach (PtmSet set in possible_peak_assignments)
             {
                 List<ModificationWithMass> mods_in_set = set.ptm_combination.Select(ptm => ptm.modification).ToList();
@@ -171,8 +171,8 @@ namespace ProteoformSuiteInternal
                     }
 
                     bool could_be_m_retention = m.modificationType == "AminoAcid" && m.motif.Motif == "M" && theoretical_base.begin == 2 && !ptm_set.ptm_combination.Any(p => p.modification.Equals(m));
-                    bool motif_matches_n_terminus = n_terminal_degraded_aas < theoretical_base_sequence.Length && m.motif.Motif == theoretical_base_sequence[n_terminal_degraded_aas].ToString();
-                    bool motif_matches_c_terminus = c_terminal_degraded_aas < theoretical_base_sequence.Length && m.motif.Motif == theoretical_base_sequence[theoretical_base_sequence.Length - c_terminal_degraded_aas - 1].ToString();
+                    bool motif_matches_n_terminus = n_terminal_degraded_aas < theoretical_base.sequence.Length && m.motif.Motif == theoretical_base.sequence[n_terminal_degraded_aas].ToString();
+                    bool motif_matches_c_terminus = c_terminal_degraded_aas < theoretical_base.sequence.Length && m.motif.Motif == theoretical_base.sequence[theoretical_base.sequence.Length - c_terminal_degraded_aas - 1].ToString();
 
                     bool cannot_be_degradation = !motif_matches_n_terminus && !motif_matches_c_terminus;
                     if (m.modificationType == "Missing" && cannot_be_degradation
@@ -185,7 +185,6 @@ namespace ProteoformSuiteInternal
 
                     bool could_be_n_term_degradation = m.modificationType == "Missing" && motif_matches_n_terminus;
                     bool could_be_c_term_degradation = m.modificationType == "Missing" && motif_matches_c_terminus;
-
                     rank_sum -= Convert.ToInt32(Sweet.lollipop.theoretical_database.variableModifications.Contains(m)); // favor variable modifications over regular modifications of the same mass
 
                     // In order of likelihood:
@@ -193,6 +192,10 @@ namespace ProteoformSuiteInternal
                     // 2. Missed monoisotopic errors are considered, but weighted towards the bottom. This should allow missed monoisotopics with common modifications like oxidation, but not rare ones.  (handled in unlocalized modification)
                     if (could_be_m_retention || could_be_n_term_degradation || could_be_c_term_degradation)
                         rank_sum += Sweet.lollipop.mod_rank_first_quartile / 2;
+                    else if (m.modificationType == "Deconvolution Error")
+                        rank_sum += Sweet.lollipop.neucode_labeled ? 
+                            Sweet.lollipop.mod_rank_third_quartile :   //in neucode-labeled data, fewer missed monoisotopics - don't prioritize
+                            1 ; //in label-free, more missed monoisotoipcs, should prioritize (set to same priority as variable modification)
                     else
                         rank_sum += known_mods.Concat(Sweet.lollipop.theoretical_database.variableModifications).Contains(m) ?
                             mod_rank :
@@ -206,6 +209,7 @@ namespace ProteoformSuiteInternal
                     possible_ptmsets.Add(adjusted_ranksum);
                 }
             }
+
             return possible_ptmsets;
         }
 
@@ -213,18 +217,28 @@ namespace ProteoformSuiteInternal
 
         #region Private Methods
 
-        private void assign_pf_identity(ExperimentalProteoform e, Proteoform theoretical_reference, PtmSet set, ProteoformRelation r, int sign, PtmSet change)
+        private void assign_pf_identity(ExperimentalProteoform e, PtmSet set, ProteoformRelation r, int sign, PtmSet change)
         {
             if (r.represented_ptmset == null)
             {
                 r.represented_ptmset = change;
                 if (r.RelationType == ProteoformComparison.ExperimentalExperimental) r.DeltaMass *= sign;
             }
+
             if (e.linked_proteoform_references == null)
             {
                 e.linked_proteoform_references = new List<Proteoform>(this.linked_proteoform_references);
                 e.linked_proteoform_references.Add(this);
                 e.ptm_set = set;
+                e.ambiguous = false;
+
+            }
+            else
+            {
+                //if already been assigned -- check if gene name != this gene name ==> ambiguous and same length path
+                if (e.gene_name.get_prefered_name(Lollipop.preferred_gene_label) != this.gene_name.get_prefered_name(Lollipop.preferred_gene_label)
+                    && e.linked_proteoform_references.Count == this.linked_proteoform_references.Count + 1)
+                    e.ambiguous = true;
             }
 
             if (e.gene_name == null)

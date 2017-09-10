@@ -11,7 +11,7 @@ using System.Text;
 namespace Test
 {
     [TestFixture]
-    class TestSaveState
+    class TestSweet
     {
 
         #region Setup
@@ -145,7 +145,8 @@ namespace Test
         {
             Sweet.lollipop = new Lollipop();
             Assert.True(ResultsSummaryGenerator.generate_full_report().Length > 0);
-            Assert.True(ResultsSummaryGenerator.datatable_tostring(ResultsSummaryGenerator.results_dataframe(new TusherAnalysis1())).Length > 0);
+            Assert.True(ResultsSummaryGenerator.datatable_tostring(ResultsSummaryGenerator.experimental_results_dataframe(new TusherAnalysis1())).Length > 0);
+            Assert.True(ResultsSummaryGenerator.datatable_tostring(ResultsSummaryGenerator.topdown_results_dataframe()).Length > 0);
         }
 
         [Test]
@@ -158,9 +159,20 @@ namespace Test
             ProteoformFamily f = new ProteoformFamily(e);
             f.construct_family();
             Sweet.lollipop.target_proteoform_community.families = new List<ProteoformFamily> { f };
-            string[] lines = ResultsSummaryGenerator.datatable_tostring(ResultsSummaryGenerator.results_dataframe(Sweet.lollipop.TusherAnalysis1)).Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+            string[] lines = ResultsSummaryGenerator.datatable_tostring(ResultsSummaryGenerator.experimental_results_dataframe(Sweet.lollipop.TusherAnalysis1)).Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             Assert.True(lines.Count() == 3);
             Assert.True(lines.Any(a => a.Contains("E1")));
+            TopDownProteoform td = ConstructorsForTesting.TopDownProteoform("TD1", 1000, 10);
+            td.linked_proteoform_references = new List<Proteoform>(new List<Proteoform> { ConstructorsForTesting.make_a_theoretical() });
+            td.ptm_set = e.linked_proteoform_references.Last().ptm_set;
+            f = new ProteoformFamily(td);
+            f.construct_family();
+            Sweet.lollipop.target_proteoform_community.families = new List<ProteoformFamily> { f };
+            lines = ResultsSummaryGenerator.datatable_tostring(ResultsSummaryGenerator.experimental_results_dataframe(Sweet.lollipop.TusherAnalysis1)).Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+            Assert.True(lines.Count() == 2);
+            lines = ResultsSummaryGenerator.datatable_tostring(ResultsSummaryGenerator.topdown_results_dataframe()).Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+            Assert.True(lines.Count() == 3);
+            Assert.True(lines.Any(a => a.Contains("TD1")));
         }
 
         [Test]

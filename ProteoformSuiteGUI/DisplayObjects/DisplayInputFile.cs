@@ -29,22 +29,25 @@ namespace ProteoformSuiteGUI
 
         #region Public Properties
 
-        // For all files
-        public int UniqueId
-        {
-            get { return file.UniqueId; }
-        }
 
         public string Filename
         {
             get { return file.filename; }
         }
-
-        public Purpose Purpose
+       
+        // For quantification or calibration files
+        public string biological_replicate
         {
-            get { return file.purpose; }
+            get
+            {
+                return file.biological_replicate;
+            }
+            set
+            {
+                Sweet.change_file(file, file.biological_replicate, nameof(file.biological_replicate), file.biological_replicate.ToString(), value.ToString());
+                file.biological_replicate = value;
+            }
         }
-
 
         //For protein databases
         public bool ContaminantDB
@@ -57,21 +60,6 @@ namespace ProteoformSuiteGUI
             {
                 Sweet.change_file(file, file.ContaminantDB, nameof(file.ContaminantDB), file.ContaminantDB.ToString(), value.ToString());
                 file.ContaminantDB = value;
-            }
-        }
-
-
-        // For quantification files
-        public string biological_replicate
-        {
-            get
-            {
-                return file.biological_replicate;
-            }
-            set
-            {
-                Sweet.change_file(file, file.biological_replicate, nameof(file.biological_replicate), file.biological_replicate.ToString(), value.ToString());
-                file.biological_replicate = value;
             }
         }
 
@@ -114,8 +102,9 @@ namespace ProteoformSuiteGUI
             }
         }
 
+
         public string hv_condition
-        {
+        { 
             get
             {
                 return file.hv_condition;
@@ -124,16 +113,6 @@ namespace ProteoformSuiteGUI
             {
                 Sweet.change_file(file, file.hv_condition, nameof(file.hv_condition), file.hv_condition.ToString(), value.ToString());
                 file.hv_condition = value;
-            }
-        }
-
-
-        // For identification files
-        public bool matchingCalibrationFile
-        {
-            get
-            {
-                return file.matchingCalibrationFile;
             }
         }
 
@@ -150,8 +129,6 @@ namespace ProteoformSuiteGUI
             }
         }
 
-
-
         // Other for all files
         public string complete_path
         {
@@ -162,6 +139,18 @@ namespace ProteoformSuiteGUI
         {
             get { return file.directory; }
         }
+
+        public Purpose Purpose
+        {
+            get { return file.purpose; }
+        }
+
+        // For all files
+        public int UniqueId
+        {
+            get { return file.UniqueId; }
+        }
+
 
         #endregion Public Properties
 
@@ -186,7 +175,6 @@ namespace ProteoformSuiteGUI
             dgv.Columns[nameof(Directory)].ReadOnly = true;
             dgv.Columns[nameof(Filename)].ReadOnly = true;
             dgv.Columns[nameof(Purpose)].ReadOnly = true;
-            dgv.Columns[nameof(matchingCalibrationFile)].ReadOnly = true;
         }
 
         public static DataTable FormatInputFileTable(List<DisplayInputFile> display, string table_name, IEnumerable<Purpose> dgv_purposes)
@@ -204,7 +192,6 @@ namespace ProteoformSuiteGUI
         {
             if (property_name == nameof(UniqueId)) return "File ID";
             if (property_name == nameof(complete_path)) return "File Path";
-            if (property_name == nameof(matchingCalibrationFile)) return "Matching Calibration File";
             if (property_name == nameof(biological_replicate)) return "Biological Replicate";
             if (property_name == nameof(TechnicalReplicate)) return "Technical Replicate";
             if (property_name == nameof(lt_condition)) return Sweet.lollipop.neucode_labeled ? "NeuCode Light Condition" : "Condition";
@@ -215,11 +202,10 @@ namespace ProteoformSuiteGUI
 
         private static bool visible(string property_name, bool current, IEnumerable<Purpose> dgv_purposes)
         {
-            if (property_name == nameof(matchingCalibrationFile)) return dgv_purposes.Contains(Purpose.Calibration) || dgv_purposes.Contains(Purpose.Identification) || dgv_purposes.Contains(Purpose.Quantification);
-            if (property_name == nameof(Labeling)) return dgv_purposes.Contains(Purpose.Identification) || dgv_purposes.Contains(Purpose.Quantification);
-            if (property_name == nameof(biological_replicate)) return dgv_purposes.Contains(Purpose.Quantification);
-            if (property_name == nameof(Fraction)) return dgv_purposes.Contains(Purpose.Quantification);
-            if (property_name == nameof(TechnicalReplicate)) return dgv_purposes.Contains(Purpose.Quantification);
+            if (property_name == nameof(Labeling)) return dgv_purposes.Contains(Purpose.Identification) || dgv_purposes.Contains(Purpose.Quantification) || dgv_purposes.Contains(Purpose.CalibrationIdentification) || dgv_purposes.Contains(Purpose.RawFile);
+            if (property_name == nameof(biological_replicate)) return dgv_purposes.Contains(Purpose.Quantification) || dgv_purposes.Contains(Purpose.CalibrationIdentification) || dgv_purposes.Contains(Purpose.RawFile);
+            if (property_name == nameof(Fraction)) return dgv_purposes.Contains(Purpose.Quantification) || dgv_purposes.Contains(Purpose.CalibrationIdentification) || dgv_purposes.Contains(Purpose.RawFile);
+            if (property_name == nameof(TechnicalReplicate)) return dgv_purposes.Contains(Purpose.Quantification) || dgv_purposes.Contains(Purpose.CalibrationIdentification) || dgv_purposes.Contains(Purpose.RawFile);
             if (property_name == nameof(lt_condition)) return dgv_purposes.Contains(Purpose.Quantification);
             if (property_name == nameof(hv_condition)) return Sweet.lollipop.neucode_labeled && dgv_purposes.Contains(Purpose.Quantification);
             if (property_name == nameof(ContaminantDB)) return dgv_purposes.Contains(Purpose.ProteinDatabase);

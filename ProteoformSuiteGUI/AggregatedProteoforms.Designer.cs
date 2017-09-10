@@ -341,6 +341,7 @@
             this.tb_totalAggregatedProteoforms.Location = new System.Drawing.Point(235, 227);
             this.tb_totalAggregatedProteoforms.Margin = new System.Windows.Forms.Padding(2);
             this.tb_totalAggregatedProteoforms.Name = "tb_totalAggregatedProteoforms";
+            this.tb_totalAggregatedProteoforms.ReadOnly = true;
             this.tb_totalAggregatedProteoforms.Size = new System.Drawing.Size(81, 20);
             this.tb_totalAggregatedProteoforms.TabIndex = 8;
             // 
@@ -393,7 +394,7 @@
             this.nUD_RetTimeToleranace.Location = new System.Drawing.Point(170, 44);
             this.nUD_RetTimeToleranace.Margin = new System.Windows.Forms.Padding(2, 1, 2, 1);
             this.nUD_RetTimeToleranace.Maximum = new decimal(new int[] {
-            10,
+            200,
             0,
             0,
             0});

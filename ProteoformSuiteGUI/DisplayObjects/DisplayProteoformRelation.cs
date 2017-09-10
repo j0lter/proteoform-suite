@@ -112,7 +112,8 @@ namespace ProteoformSuiteGUI
             {
                 return connected_proteoforms[0] as ExperimentalProteoform != null ?
                     ((ExperimentalProteoform)connected_proteoforms[0]).agg_rt :
-                    Double.NaN;
+                    connected_proteoforms[0] as TopDownProteoform != null ?
+                    ((TopDownProteoform)connected_proteoforms[0]).agg_rt : 0;
             }
         }
 
@@ -130,9 +131,7 @@ namespace ProteoformSuiteGUI
         {
             get
             {
-                return connected_proteoforms[0] as ExperimentalProteoform != null ?
-                    ((ExperimentalProteoform)connected_proteoforms[0]).agg_mass :
-                    Double.NaN;
+                return connected_proteoforms[0].modified_mass;
             }
         }
 
@@ -160,9 +159,7 @@ namespace ProteoformSuiteGUI
         {
             get
             {
-                return connected_proteoforms[1] as ExperimentalProteoform != null ?
-                    ((ExperimentalProteoform)connected_proteoforms[1]).agg_mass :
-                    ((TheoreticalProteoform)connected_proteoforms[1]).modified_mass;
+                return connected_proteoforms[1].modified_mass;
             }
         }
 
@@ -234,7 +231,17 @@ namespace ProteoformSuiteGUI
             }
         }
 
-        public string PtmDescription
+        public string TheoreticalDescription
+        {
+            get
+            {
+                return connected_proteoforms[1] as TheoreticalProteoform != null ?
+                    ((TheoreticalProteoform)connected_proteoforms[1]).description :
+                    "";
+            }
+        }
+
+        public string PTMDescription
         {
             get
             {
@@ -298,7 +305,7 @@ namespace ProteoformSuiteGUI
             if (!raw_et_histogram) if (property_name == nameof(OutsideNoMansLand)) return "Outside No Man's Land";
 
             //ET formatting
-            if (property_name == nameof(PtmDescription)) return "PTM Description";
+            if (property_name == nameof(PTMDescription)) return "PTM Description";
             if (mask_experimental)
             {
                 if (property_name == nameof(num_observations_1)) return "Number Experimental Observations";
@@ -386,6 +393,5 @@ namespace ProteoformSuiteGUI
         }
 
         #endregion Private Methods
-
     }
 }
