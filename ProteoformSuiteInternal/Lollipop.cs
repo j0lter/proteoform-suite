@@ -51,10 +51,9 @@ namespace ProteoformSuiteInternal
             "Proteoform Quantification Results (.xlsx)",
             "Protein Databases and PTM Lists (.xml, .xml.gz, .fasta, .txt)",
             "Top-Down Results (Unlabeled) (.xlsx)",
-            "Bottom-Up Results MzIdentML (.mzid)",
-            "Uncalibrated Proteoform Identification Results (.xlsx)",
             "Raw Files (.raw)",
-             "Uncalibrated Top-Down Results (Unlabeled) (.xlsx)"
+            "Uncalibrated Proteoform Identification Results (.xlsx)",
+            "Uncalibrated Top-Down Results (Unlabeled) (.xlsx)"
         };
 
         public static List<string>[] acceptable_extensions = new List<string>[]
@@ -63,9 +62,8 @@ namespace ProteoformSuiteInternal
             new List<string> { ".xlsx" },
             new List<string> { ".xml", ".gz", ".fasta", ".txt" },
             new List<string> { ".xlsx" },
-            new List<string> { ".mzid" },
+            new List<string> { ".raw"  },
             new List<string> { ".xlsx" },
-            new List<string> {".raw"},
             new List<string> { ".xlsx" }
 
         };
@@ -76,9 +74,8 @@ namespace ProteoformSuiteInternal
             "Excel Files (*.xlsx) | *.xlsx",
             "Protein Databases and PTM Text Files (*.xml, *.xml.gz, *.fasta, *.txt) | *.xml;*.xml.gz;*.fasta;*.txt",
             "Excel Files (*.xlsx) | *.xlsx",
-            "MZIdentML Files (*.mzid) | *.mzid",
-            "Excel Files (*.xlsx) | *.xlsx",
             "Raw Files (*.raw) | *.raw",
+            "Excel Files (*.xlsx) | *.xlsx",
             "Excel Files (*.xlsx) | *.xlsx",
         };
 
@@ -88,9 +85,8 @@ namespace ProteoformSuiteInternal
             new List<Purpose> { Purpose.Quantification },
             new List<Purpose> { Purpose.ProteinDatabase, Purpose.PtmList },
             new List<Purpose> { Purpose.TopDown },
-            new List<Purpose> { Purpose.BottomUp },
+            new List<Purpose> { Purpose.RawFile },
             new List<Purpose> { Purpose.CalibrationIdentification },
-            new List<Purpose> {Purpose.RawFile },
             new List<Purpose> { Purpose.CalibrationTopDown }
         };
 

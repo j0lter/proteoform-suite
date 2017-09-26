@@ -15,6 +15,7 @@ namespace ProteoformSuiteInternal
         private int _num_charge_states = 0;
         private double _intensity_sum = 0;
         private double _weighted_monoisotopic_mass = 0;
+        private double _normalized_intensity = 0;
 
         #endregion Private Fields
 
@@ -33,7 +34,7 @@ namespace ProteoformSuiteInternal
         public List<ChargeState> charge_states { get; set; } = new List<ChargeState>();
         public List<Component> incorporated_missed_monoisotopics = new List<Component>();
         public bool calculating_properties { get; set; } = false;
-        public int num_detected_intervals { get; set; }
+        public int  num_detected_intervals { get; set; }
         public bool accepted { get; set; }
 
         /// <summary>
@@ -98,10 +99,28 @@ namespace ProteoformSuiteInternal
                 else
                     _weighted_monoisotopic_mass = value;
             }
-        } 
+        }
+        /// <summary>
+        /// normalization of intensities using total ion current
+        /// </summary>
+        public double normalized_intensity
+        {
+            get
+            {
+                return _normalized_intensity;
+            }
+            set
+            {
+                if (!calculating_properties && charge_states.Count > 0)
+                    throw new ArgumentException("Charge state data exists that can't be overwritten with normalized intensity");
+                else
+                    _normalized_intensity = value;
+            }
+        }
+
 
         #endregion Public Properties
-    
+
         #region Constructors
 
         public Component()
@@ -126,6 +145,7 @@ namespace ProteoformSuiteInternal
             this.intensity_sum = Convert.ToDouble(cellStrings[2]); // this needs to be fixed.       
             this.accepted = true;
             this.charge_states = new List<ChargeState>();
+            //this.normalized_intensity = Convert.ToDouble()cellStrings[?];
         }
 
         #endregion Constructors

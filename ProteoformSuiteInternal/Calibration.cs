@@ -120,6 +120,23 @@ namespace ProteoformSuiteInternal
             }
         }
 
+        public double normalized_intensity()
+        {
+            double total_ion_current = 0;
+            double normalized_intensity = 0;
+
+            foreach (Component c in Sweet.lollipop.raw_experimental_components.Where(h => h.input_file.biological_replicate == raw_file.biological_replicate && h.input_file.fraction == raw_file.fraction && h.input_file.technical_replicate == raw_file.technical_replicate))
+            {
+                using (ThermoDynamicData dynamicThermo = ThermoDynamicData.InitiateDynamicConnection(c.input_file.directory))
+                {
+                    total_ion_current = Convert.ToDouble(raw_file.total_ion_current);
+                }
+                    c.input_file.total_ion_current = total_ion_current.ToString();
+            }
+
+            return normalized_intensity;
+        }
+
         private void CalibrateLinear(List<LabeledMs1DataPoint> res, int round)
         {
             Random decoy_rng = Sweet.lollipop.calibration_use_random_seed ? new Random(round + Sweet.lollipop.randomSeed_decoys) : new Random(); //new random generator for each round of 

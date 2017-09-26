@@ -49,6 +49,7 @@ namespace ProteoformSuiteInternal
 
         public string hv_condition { get; set; } = "";
 
+        public string total_ion_current { get; set; } = "";
 
         //For database files
         public bool ContaminantDB { get; set; } = false;
