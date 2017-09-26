@@ -59,7 +59,7 @@ namespace Test
             Assert.AreEqual(200d, createdComponent2.intensity_sum);
             Assert.AreEqual(true, createdComponent2.accepted);
             Assert.AreEqual(1, createdComponent2.charge_states.Count());
-            //Assert.AreEqual(3, createdComponent2.normalized_intensity);
+            Assert.AreEqual(0.0d, createdComponent2.normalized_intensity);
         }
 
         [Test]
@@ -86,7 +86,7 @@ namespace Test
             Assert.AreEqual(2, createdComponent3.num_charge_states);
             Assert.AreEqual(true, createdComponent3.accepted);
             Assert.AreEqual(2, createdComponent3.charge_states.Count());
-            //Assert.AreEqual(3, createdComponent3.normalized_intensity);
+            Assert.AreEqual(0.0d, createdComponent3.normalized_intensity);
         }
 
         [Test]
