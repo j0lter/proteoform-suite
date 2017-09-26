@@ -960,6 +960,10 @@
             this.bt_calibrate.TabIndex = 40;
             this.bt_calibrate.Text = "Calibrate";
             this.bt_calibrate.UseVisualStyleBackColor = true;
+<<<<<<< HEAD
+=======
+            this.bt_calibrate.Click += new System.EventHandler(this.bt_calibrate_Click);
+>>>>>>> 0942465cb639861f1a736de0eece894cca67b653
             // 
             // groupBox2
             // 

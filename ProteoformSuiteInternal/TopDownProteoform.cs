@@ -11,26 +11,26 @@ namespace ProteoformSuiteInternal
         public string pfr { get; set; }
         public string name { get; set; }
         public string sequence { get; set; }
-        public int begin { get; set; } //position one based
-        public int end { get; set; } //position one based
+        public int topdown_begin { get; set; } //position one based
+        public int topdown_end { get; set; } //position one based
         public double theoretical_mass { get; set; }
         public List<TopDownHit> topdown_hits;
-        private PtmSet _topdown_ptmset = new PtmSet(new List<Ptm>());
-        public PtmSet topdown_ptmset //the ptmset read in with td data
+        private PtmSet _topdown_ptm_set = new PtmSet(new List<Ptm>());
+        public PtmSet topdown_ptm_set //the ptmset read in with td data
         {
             get
             {
-                return _topdown_ptmset;
+                return _topdown_ptm_set;
             }
 
             set
             {
-                _topdown_ptmset = value;
-                topdown_ptm_description = topdown_ptmset == null || topdown_ptmset.ptm_combination == null ?
+                _topdown_ptm_set = value;
+                topdown_ptm_description = _topdown_ptm_set == null || _topdown_ptm_set.ptm_combination == null ?
                     "Unknown" :
-                    topdown_ptmset.ptm_combination.Count == 0 ?
+                    _topdown_ptm_set.ptm_combination.Count == 0 ?
                         "Unmodified" :
-                    String.Join("; ", topdown_ptmset.ptm_combination.Select(ptm => ptm.position > 0 ? ptm.modification.id + "@" + ptm.position : Sweet.lollipop.theoretical_database.unlocalized_lookup.TryGetValue(ptm.modification, out UnlocalizedModification x) ? x.id : ptm.modification.id).ToList());
+                    String.Join("; ", _topdown_ptm_set.ptm_combination.Select(ptm => ptm.position > 0 ? ptm.modification.id + "@" + ptm.position : Sweet.lollipop.theoretical_database.unlocalized_lookup.TryGetValue(ptm.modification, out UnlocalizedModification x) ? x.id : ptm.modification.id).ToList());
             }
         }
         public string topdown_ptm_description { get; set; }
@@ -44,15 +44,15 @@ namespace ProteoformSuiteInternal
             TopDownHit root = hits[0];
             this.name = root.name;
             this.pfr = root.pfr;
-            this.topdown_ptmset = new PtmSet(root.ptm_list);
+            this.topdown_ptm_set = new PtmSet(root.ptm_list);
             this.uniprot_id = root.uniprot_id;
             this.sequence = root.sequence;
-            this.begin = root.begin;
+            this.topdown_begin = root.begin;
             this.theoretical_mass = root.theoretical_mass;
-            this.end = root.end;
+            this.topdown_end = root.end;
             this.topdown_hits = hits;
             this.calculate_td_properties();
-            this.accession = accession + "_" + begin + "to" + end + "_1TD";
+            this.accession = accession + "_" + topdown_begin + "to" + topdown_end + "_1TD";
             this.lysine_count = sequence.Count(s => s == 'K');
             this.topdown_id = true;
         }
@@ -62,6 +62,7 @@ namespace ProteoformSuiteInternal
             this.root = t.root;
             this.name = t.name;
             this.ptm_set = new PtmSet(t.ptm_set.ptm_combination);
+            this.topdown_ptm_set = t.topdown_ptm_set;
             this.uniprot_id = t.uniprot_id;
             this.sequence = t.sequence;
             this.begin = t.begin;
@@ -82,6 +83,8 @@ namespace ProteoformSuiteInternal
             this.agg_mass = t.agg_mass;
             this.mass_shifted = t.mass_shifted;
             this.is_target = t.is_target;
+            this.topdown_end = t.topdown_end;
+            this.topdown_begin = t.topdown_begin;
         }
 
 
@@ -106,30 +109,8 @@ namespace ProteoformSuiteInternal
             {
                 TheoreticalProteoform t = linked_proteoform_references.First() as TheoreticalProteoform;
                 bool matching_accession = t.ExpandedProteinList.SelectMany(p => p.AccessionList).Select(a => a.Split('_')[0]).Contains(accession.Split('_')[0]);
-                bool same_begin_and_end = t.begin == begin && t.end == end;
-                bool same_ptm_set = true;
-                List<string> theoretical_ptms = ptm_set.ptm_combination.Select(ptm => Sweet.lollipop.theoretical_database.unlocalized_lookup.TryGetValue(ptm.modification, out UnlocalizedModification x) ? x.id : ptm.modification.id).ToList();
-                List<string> td_ptms = topdown_ptmset.ptm_combination.Select(ptm => Sweet.lollipop.theoretical_database.unlocalized_lookup.TryGetValue(ptm.modification, out UnlocalizedModification x) ? x.id : ptm.modification.id).ToList();
-                foreach (string m in theoretical_ptms.Distinct())
-                {
-                    if (td_ptms.Count(s => s == m) != theoretical_ptms.Count(s => s == m))
-                    {
-                        same_ptm_set = false;
-                        break;
-                    }
-                }
-                //check the other way in case extra PTMs in one list...
-                if (same_ptm_set)
-                {
-                    foreach (string m in td_ptms.Distinct())
-                    {
-                        if (td_ptms.Count(s => s == m) != theoretical_ptms.Count(s => s == m))
-                        {
-                            same_ptm_set = false;
-                            break;
-                        }
-                    }
-                }
+                bool same_begin_and_end = begin == topdown_begin && end == topdown_end;
+                bool same_ptm_set = topdown_ptm_set.same_ptmset(ptm_set, true);
                 correct_id = matching_accession && same_ptm_set && same_begin_and_end;
             }
         }

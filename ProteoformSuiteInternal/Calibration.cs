@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using IO.Thermo;
 using Chemistry;
+using Spectra;
 using System.IO;
 using ClosedXML.Excel;
 using System.Text.RegularExpressions;
@@ -45,13 +46,14 @@ namespace ProteoformSuiteInternal
                 round++;
                 trainingPointCounts.Add(dataPointAcquisitionResult.Ms1List.Count);
                 if (dataPointAcquisitionResult.Ms1List.Count < 5) return false;
-                CalibrateLinear(dataPointAcquisitionResult.Ms1List, round);
+
+                CalibrateLinear(dataPointAcquisitionResult.Ms1List.OrderBy(p => p.Label).ToList(), round);
             }
 
             trainingPointCounts = new List<int>();
             for (int forestCalibrationRound = 1; ; forestCalibrationRound++)
             {
-                CalibrationFunction calibrationFunction = CalibrateRF(dataPointAcquisitionResult, round);
+                CalibrationFunction calibrationFunction = CalibrateRF(dataPointAcquisitionResult.Ms1List.OrderBy(p => p.Label).ToList(), round);
                 dataPointAcquisitionResult = GetDataPoints();
                 if (forestCalibrationRound >= 2 && dataPointAcquisitionResult.Ms1List.Count <= trainingPointCounts[forestCalibrationRound - 2])
                     break;
@@ -62,12 +64,10 @@ namespace ProteoformSuiteInternal
             return true;
         }
 
-        private CalibrationFunction CalibrateRF(DataPointAquisitionResults res, int round)
+        private CalibrationFunction CalibrateRF(List<LabeledMs1DataPoint> res, int round)
         {
-            Random decoy_rng = Sweet.lollipop.calibration_use_random_seed ? new Random(round + Sweet.lollipop.randomSeed_decoys) : new Random(); //new random generator for each round of calibration
-            var shuffledMs1TrainingPoints = res.Ms1List.OrderBy(item => decoy_rng.Next()).ToList();
-
-
+            Random decoy_rng = Sweet.lollipop.calibration_use_random_seed ? new Random(round + Sweet.lollipop.calibration_random_seed) : new Random(); //new random generator for each round of calibration
+            var shuffledMs1TrainingPoints = res.OrderBy(item => decoy_rng.Next()).ToList();
             var trainList1 = shuffledMs1TrainingPoints.Take((int)(shuffledMs1TrainingPoints.Count * 0.75)).ToList();
             var testList1 = shuffledMs1TrainingPoints.Skip((int)(shuffledMs1TrainingPoints.Count * 0.75)).ToList();
 
@@ -115,8 +115,8 @@ namespace ProteoformSuiteInternal
             }
             foreach (var a in myMsDataFile.Where(s => s.MsnOrder == 1))
             {
-                Func<IMzPeak, double> theFunc = x => x.Mz - bestCf.Predict(new double[] { x.Mz, a.RetentionTime });
-                a.TransformByApplyingFunctionToSpectra(theFunc);
+                Func<Spectra.IPeak, double> theFunc = x => x.X - bestCf.Predict(new double[] { x.X, a.RetentionTime });
+                a.MassSpectrum.ReplaceXbyApplyingFunction(theFunc);
             }
         }
 
@@ -139,10 +139,8 @@ namespace ProteoformSuiteInternal
 
         private void CalibrateLinear(List<LabeledMs1DataPoint> res, int round)
         {
-            Random decoy_rng = Sweet.lollipop.calibration_use_random_seed ? new Random(round + Sweet.lollipop.randomSeed_decoys) : new Random(); //new random generator for each round of 
-
+            Random decoy_rng = Sweet.lollipop.calibration_use_random_seed ? new Random(round + Sweet.lollipop.calibration_random_seed) : new Random(); //new random generator for each round of 
             var shuffledMs1TrainingPoints = res.OrderBy(item => decoy_rng.Next()).ToList();
-
             var trainList1 = shuffledMs1TrainingPoints.Take((int)(shuffledMs1TrainingPoints.Count * 0.75)).ToList();
             var testList1 = shuffledMs1TrainingPoints.Skip((int)(shuffledMs1TrainingPoints.Count * 0.75)).ToList();
 
@@ -164,8 +162,8 @@ namespace ProteoformSuiteInternal
             {
                 new TransformFunction(b => new double[] { b[0] }, 1),
                 new TransformFunction(b => new double[] { b[1] }, 1),
-                new TransformFunction(b => new double[] { b[0], b[1] }, 2),
-    };
+                new TransformFunction(b => new double[] { b[0], b[1] }, 2)
+            };
 
             foreach (var transform in transforms)
             {
@@ -196,7 +194,7 @@ namespace ProteoformSuiteInternal
 
             // Set of peaks, identified by m/z and retention time. If a peak is in here, it means it has been a part of an accepted identification, and should be rejected
             var peaksAddedFromMS1HashSet = new HashSet<Tuple<double, int>>();
-            foreach (TopDownHit identification in high_scoring_topdown_hits)
+            foreach (TopDownHit identification in high_scoring_topdown_hits.OrderByDescending(h => h.score).ThenBy(h => h.pscore).ThenBy(h => h.reported_mass))
             {
                 List<int> scanNumbers = new List<int>() { identification.ms2ScanNumber };
                 int proteinCharge = identification.charge;
@@ -332,8 +330,8 @@ namespace ProteoformSuiteInternal
                                 continue;
                             }
 
-                            var closestPeak = fullMS1spectrum.GetClosestPeak(theMZ);
-                            var closestPeakMZ = closestPeak.Mz;
+                            var closestPeak = fullMS1spectrum.GetClosestPeakXvalue(theMZ);
+                            var closestPeakMZ = closestPeak;
 
                             var theTuple = Tuple.Create(closestPeakMZ, ms1ScanNumber);
                             if (!peaksAddedHashSet.Contains(theTuple))

@@ -275,7 +275,8 @@ namespace ProteoformSuiteInternal
         {
             List<TopDownProteoform> topdown_proteoforms = new List<TopDownProteoform>();
             //get topdown hits that meet criteria
-            List<TopDownHit> remaining_td_hits = top_down_hits.Where(h => h.score >= min_score_td && ((biomarker && h.tdResultType == TopDownResultType.Biomarker) || (tight_abs_mass && h.tdResultType == TopDownResultType.TightAbsoluteMass))).OrderByDescending(h => h.score).ThenBy(h => h.pvalue).ThenBy(h => h.reported_mass).ToList();
+            List<TopDownHit> remaining_td_hits = top_down_hits.Where(h => h.score >= min_score_td && ((biomarker && h.tdResultType == TopDownResultType.Biomarker) || (tight_abs_mass && h.tdResultType == TopDownResultType.TightAbsoluteMass))).OrderByDescending(h => h.score).ThenBy(h => h.pscore).ThenBy(h => h.reported_mass).ToList();
+
             List<string> PFRs = remaining_td_hits.Select(h => h.pfr).Distinct().ToList();
             Parallel.ForEach(PFRs, pfr =>
             {
@@ -379,15 +380,25 @@ namespace ProteoformSuiteInternal
         {
             foreach (ExperimentalProteoform pf in experimental_proteoforms)
             {
-                pf.manual_validation_id = pf.find_manual_inspection_component(pf.aggregated);
-                pf.manual_validation_verification = pf.find_manual_inspection_component(pf.lt_verification_components.Concat(pf.hv_verification_components));
-                pf.manual_validation_quant = pf.find_manual_inspection_component(pf.lt_quant_components.Concat(pf.hv_quant_components));
+                if (pf as TopDownProteoform == null)
+                {
+                    pf.manual_validation_id = pf.find_manual_inspection_component(pf.aggregated);
+                    pf.manual_validation_verification = pf.find_manual_inspection_component(pf.lt_verification_components.Concat(pf.hv_verification_components));
+                    pf.manual_validation_quant = pf.find_manual_inspection_component(pf.lt_quant_components.Concat(pf.hv_quant_components));
+                }
+                else
+                {
+                    TopDownHit best_hit = (pf as TopDownProteoform).topdown_hits.OrderByDescending(h => h.score).ThenBy(h => h.pscore).First();
+                    pf.manual_validation_id = "File: " + best_hit.filename
+                         + "; Scan: " + best_hit.ms2ScanNumber
+                        + "; RT (min): " + best_hit.ms2_retention_time;
+                }
             }
         }
         
         public List<ExperimentalProteoform> add_topdown_proteoforms(List<ExperimentalProteoform> vetted_proteoforms, List<TopDownProteoform> topdown_proteoforms)
         {
-            foreach (TopDownProteoform topdown in topdown_proteoforms.Where(t => t.accepted).OrderByDescending(t => t.topdown_hits.Max(h => h.score)).ThenBy(t => t.topdown_hits.Min(h => h.pvalue)).ThenBy(t => t.agg_mass))
+            foreach (TopDownProteoform topdown in topdown_proteoforms.Where(t => t.accepted).OrderByDescending(t => t.topdown_hits.Max(h => h.score)).ThenBy(t => t.topdown_hits.Min(h => h.pscore)).ThenBy(t => t.agg_mass))
             {
                 double mass = topdown.modified_mass;
                 List<ProteoformRelation> all_td_relations = new List<ProteoformRelation>();
@@ -406,7 +417,6 @@ namespace ProteoformSuiteInternal
                 {
                     ExperimentalProteoform matching_experimental = potential_matches.OrderBy(p => Math.Abs(topdown.modified_mass - Math.Round(topdown.modified_mass - p.modified_mass, 0) * Lollipop.MONOISOTOPIC_UNIT_MASS)).ThenBy(p => Math.Round(topdown.modified_mass - p.modified_mass, 0)).First();
                     topdown.matching_experimental = matching_experimental;
-                    topdown.agg_intensity = matching_experimental.agg_intensity;
                     vetted_proteoforms.Remove(matching_experimental);
                 }
                 else topdown.matching_experimental = null;
@@ -599,7 +609,7 @@ namespace ProteoformSuiteInternal
         public int mod_rank_second_quartile = 0;
         public int mod_rank_third_quartile = 0;
         public TheoreticalProteoformDatabase theoretical_database = new TheoreticalProteoformDatabase();
-        public List<BottomUpPSM> BottomUpPSMList = new List<BottomUpPSM>();
+        //public List<BottomUpPSM> BottomUpPSMList = new List<BottomUpPSM>();
         public bool useRandomSeed_decoys = false;
         public int randomSeed_decoys = 1;
 
@@ -687,8 +697,6 @@ namespace ProteoformSuiteInternal
         public string family_build_folder_path = "";
         public static bool gene_centric_families = false;
         public static string preferred_gene_label = "";
-        public bool remove_bad_relations = false;
-
         public int deltaM_edge_display_rounding = 2;
 
         public static string[] node_positioning = new string[]

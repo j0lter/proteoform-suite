@@ -14,18 +14,81 @@ namespace Test
         public void assign_missing_aa_identity()
         {
             TheoreticalProteoform t = ConstructorsForTesting.make_a_theoretical("", 100087.03, 0); // sequence with all serines
+            t.gene_name = new GeneName(new List<Tuple<string, string>>() { new Tuple<string, string>("Gene", "Gene") } );
             ExperimentalProteoform e = ConstructorsForTesting.ExperimentalProteoform("", 100087.03, 0, true);
-            e.linked_proteoform_references = new List<Proteoform> { t };
             ExperimentalProteoform e2 = ConstructorsForTesting.ExperimentalProteoform("", 10000, 0, true);
             ConstructorsForTesting.make_relation(e, e2, ProteoformComparison.ExperimentalExperimental, 87.03);
             ModificationMotif.TryGetMotif("S", out ModificationMotif motif);
-            PtmSet set = new PtmSet(new List<Ptm> { new Ptm(0, new ModificationWithMass("missing serine", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, -87.03, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Missing")) });
+            PtmSet set = new PtmSet(new List<Ptm> { new Ptm(0, new ModificationWithMass("missing serine", "Missing", motif, TerminusLocalization.Any, -87.03)) });
+            PtmSet set_unmodified = new PtmSet(new List<Ptm> { new Ptm() });
             Sweet.lollipop.theoretical_database.possible_ptmset_dictionary[Math.Round(set.mass, 1)] = new List<PtmSet> { set };
+            Sweet.lollipop.theoretical_database.possible_ptmset_dictionary[Math.Round(set_unmodified.mass, 1)] = new List<PtmSet> { set_unmodified };
+            ConstructorsForTesting.make_relation(e, t, ProteoformComparison.ExperimentalTheoretical, 0);
+            t.relationships.First().Accepted = true;
+            t.relationships.First().peak = new DeltaMassPeak(t.relationships.First(), new HashSet<ProteoformRelation> { t.relationships.First() }); // should assign the possible ptmset
+            t.identify_connected_experimentals(new List<PtmSet> { set_unmodified }, new List<ModificationWithMass>());
             e.relationships.First().Accepted = true;
             e.relationships.First().peak = new DeltaMassPeak(e.relationships.First(), new HashSet<ProteoformRelation> { e.relationships.First() }); // should assign the possible ptmset
             e.identify_connected_experimentals(new List<PtmSet> { set }, new List<ModificationWithMass> { set.ptm_combination.First().modification });
+            Assert.IsNotNull(e.linked_proteoform_references);
+            Assert.AreEqual(0, e.ptm_set.ptm_combination.Count);
+            Assert.AreEqual(1, e.begin);
+            Assert.AreEqual(12, e.end);
             Assert.IsNotNull(e2.linked_proteoform_references);
-            Assert.AreEqual(-87.03, e2.ptm_set.mass);
+            Assert.AreEqual(0, e2.ptm_set.ptm_combination.Count);
+            Assert.AreEqual(1, e2.begin);
+            Assert.AreEqual(11, e2.end);
+            Assert.AreEqual(0, e2.ptm_set.ptm_combination.Count);
+
+            t = ConstructorsForTesting.make_a_theoretical("", 100087.03, 0); // sequence with all serines
+            t.gene_name = new GeneName(new List<Tuple<string, string>>() { new Tuple<string, string>("Gene", "Gene") });
+            t.sequence = "SAAAAAAAAAAA";
+             e = ConstructorsForTesting.ExperimentalProteoform("", 100087.03, 0, true);
+             e2 = ConstructorsForTesting.ExperimentalProteoform("", 10000, 0, true);
+            ConstructorsForTesting.make_relation(e, e2, ProteoformComparison.ExperimentalExperimental, 87.03);
+            ConstructorsForTesting.make_relation(e, t, ProteoformComparison.ExperimentalTheoretical, 0);
+            t.relationships.First().Accepted = true;
+            t.relationships.First().peak = new DeltaMassPeak(t.relationships.First(), new HashSet<ProteoformRelation> { t.relationships.First() }); // should assign the possible ptmset
+            t.identify_connected_experimentals(new List<PtmSet> { set_unmodified }, new List<ModificationWithMass>());
+            e.relationships.First().Accepted = true;
+            e.relationships.First().peak = new DeltaMassPeak(e.relationships.First(), new HashSet<ProteoformRelation> { e.relationships.First() }); // should assign the possible ptmset
+            e.identify_connected_experimentals(new List<PtmSet> { set }, new List<ModificationWithMass> { set.ptm_combination.First().modification });
+            Assert.IsNotNull(e.linked_proteoform_references);
+            Assert.AreEqual(0, e.ptm_set.ptm_combination.Count);
+            Assert.AreEqual(1, e.begin);
+            Assert.AreEqual(12, e.end);
+            Assert.IsNotNull(e2.linked_proteoform_references);
+            Assert.AreEqual(2, e2.begin);
+            Assert.AreEqual(12, e2.end);
+            Assert.AreEqual(0, e2.ptm_set.ptm_combination.Count);
+
+            t = ConstructorsForTesting.make_a_theoretical("", 100087.03, 0); // sequence with all serines
+            t.gene_name = new GeneName(new List<Tuple<string, string>>() { new Tuple<string, string>("Gene", "Gene") });
+            t.sequence = "MSAAAAAAAAAA";
+            t.begin = 2;
+             e = ConstructorsForTesting.ExperimentalProteoform("", 100087.03, 0, true);
+             e2 = ConstructorsForTesting.ExperimentalProteoform("", 100200.03, 0, true);
+            ConstructorsForTesting.make_relation(e, e2, ProteoformComparison.ExperimentalExperimental, 113);
+            ModificationMotif.TryGetMotif("M", out motif);
+             set = new PtmSet(new List<Ptm> { new Ptm(0, new ModificationWithMass("M retention", "AminoAcid", motif, TerminusLocalization.Any, 113)) });
+            Sweet.lollipop.theoretical_database.possible_ptmset_dictionary[Math.Round(set.mass, 1)] = new List<PtmSet> { set };
+            Sweet.lollipop.theoretical_database.possible_ptmset_dictionary[Math.Round(set_unmodified.mass, 1)] = new List<PtmSet> { set_unmodified };
+            ConstructorsForTesting.make_relation(e, t, ProteoformComparison.ExperimentalTheoretical, 0);
+            t.relationships.First().Accepted = true;
+            t.relationships.First().peak = new DeltaMassPeak(t.relationships.First(), new HashSet<ProteoformRelation> { t.relationships.First() }); // should assign the possible ptmset
+            t.identify_connected_experimentals(new List<PtmSet> { set_unmodified }, new List<ModificationWithMass>());
+            e.relationships.First().Accepted = true;
+            e.relationships.First().peak = new DeltaMassPeak(e.relationships.First(), new HashSet<ProteoformRelation> { e.relationships.First() }); // should assign the possible ptmset
+            e.identify_connected_experimentals(new List<PtmSet> { set }, new List<ModificationWithMass> { set.ptm_combination.First().modification });
+            Assert.IsNotNull(e.linked_proteoform_references);
+            Assert.AreEqual(0, e.ptm_set.ptm_combination.Count);
+            Assert.AreEqual(2, e.begin);
+            Assert.AreEqual(12, e.end);
+            Assert.IsNotNull(e2.linked_proteoform_references);
+            Assert.AreEqual(0, e2.ptm_set.ptm_combination.Count);
+            Assert.AreEqual(1, e2.begin);
+            Assert.AreEqual(12, e2.end);
+
         }
 
         [Test]
@@ -37,18 +100,18 @@ namespace Test
             ModificationMotif.TryGetMotif("S", out ModificationMotif motif);
             PtmSet set = new PtmSet(new List<Ptm>
             {
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.01, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.01, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.01, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.01)),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.01)),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.01))
             });
             PtmSet set2 = new PtmSet(new List<Ptm>
             {
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.01, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.01, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.01)),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.01))
             });
             PtmSet set3 = new PtmSet(new List<Ptm>
             {
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.01, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.01))
             });
             e.ptm_set = set;
             Sweet.lollipop.theoretical_database.possible_ptmset_dictionary = new Dictionary<double, List<PtmSet>>
@@ -76,8 +139,8 @@ namespace Test
             ModificationMotif.TryGetMotif("S", out ModificationMotif motif);
             PtmSet set_not_quite_zero = new PtmSet(new List<Ptm>
             {
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.011, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
-                new Ptm(0, new ModificationWithMass("acetyl loss", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, -42.01, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.01)),
+                new Ptm(0, new ModificationWithMass("acetyl loss", "", motif, TerminusLocalization.Any, -42.01)),
             });
 
             PtmSet set_unmodified = new PtmSet(new List<Ptm>{ new Ptm() });
@@ -102,7 +165,7 @@ namespace Test
         public void adduct_experimental()
         {
             ModificationMotif.TryGetMotif("S", out ModificationMotif motif);
-            PtmSet set = new PtmSet(new List<Ptm> { new Ptm(0, new ModificationWithMass("Sulfate Adduct", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 97.97, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")) });
+            PtmSet set = new PtmSet(new List<Ptm> { new Ptm(0, new ModificationWithMass("Sulfate Adduct", "", motif, TerminusLocalization.Any, 97.97)) });
             PtmSet set_unmodified = new PtmSet(new List<Ptm> { new Ptm() });
             Sweet.lollipop.theoretical_database.possible_ptmset_dictionary[Math.Round(set.mass, 1)] = new List<PtmSet> { set };
             Sweet.lollipop.theoretical_database.possible_ptmset_dictionary[Math.Round(set_unmodified.mass, 1)] = new List<PtmSet> { set_unmodified };
@@ -128,15 +191,15 @@ namespace Test
             Sweet.lollipop = new Lollipop();
             Lollipop.preferred_gene_label = "primary";
 
-            TheoreticalProteoform t1 = ConstructorsForTesting.make_a_theoretical("", 100000, 0); // sequence with all serines
+            TheoreticalProteoform t1 = ConstructorsForTesting.make_a_theoretical("T1", 100000, 0); // sequence with all serines
             t1.gene_name = new GeneName(new List<Tuple<string, string>>() { new Tuple<string, string>("gene1", "gene1") });
-            ExperimentalProteoform e1 = ConstructorsForTesting.ExperimentalProteoform("", 10000, 0, true);
+            ExperimentalProteoform e1 = ConstructorsForTesting.ExperimentalProteoform("E1", 10000, 0, true);
             ConstructorsForTesting.make_relation(t1, e1, ProteoformComparison.ExperimentalTheoretical, 0);
 
-            TheoreticalProteoform t2 = ConstructorsForTesting.make_a_theoretical("", 100042.01, 0); // sequence with all serines
+            TheoreticalProteoform t2 = ConstructorsForTesting.make_a_theoretical("T2", 100042.01, 0); // sequence with all serines
             t2.gene_name = new GeneName(new List<Tuple<string, string>>() { new Tuple<string, string>("gene2", "gene2") });
-            ExperimentalProteoform e2 = ConstructorsForTesting.ExperimentalProteoform("", 100042.01, 0, true);
-            ExperimentalProteoform e3 = ConstructorsForTesting.ExperimentalProteoform("", 100042.01, 0, true);
+            ExperimentalProteoform e2 = ConstructorsForTesting.ExperimentalProteoform("E2", 100042.01, 0, true);
+            ExperimentalProteoform e3 = ConstructorsForTesting.ExperimentalProteoform("E3", 100042.01, 0, true);
             ConstructorsForTesting.make_relation(e3, e1, ProteoformComparison.ExperimentalExperimental, 42.01);
             ConstructorsForTesting.make_relation(e3, e2, ProteoformComparison.ExperimentalExperimental, 0);
             ConstructorsForTesting.make_relation(t2, e2, ProteoformComparison.ExperimentalTheoretical, 0);
@@ -145,7 +208,7 @@ namespace Test
             ModificationMotif.TryGetMotif("S", out ModificationMotif motif);
             PtmSet acetyl = new PtmSet(new List<Ptm>
             {
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.011, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.011))
             });
 
             PtmSet set_unmodified = new PtmSet(new List<Ptm> { new Ptm() });
@@ -159,7 +222,7 @@ namespace Test
 
             acetyl = new PtmSet(new List<Ptm>
             {
-                new Ptm(0, new ModificationWithMass("acetyl", new Tuple<string, string>("", ""), motif, TerminusLocalization.Any, 42.011, new Dictionary<string, IList<string>>(), new List<double>(), new List<double>(), "Mod")),
+                new Ptm(0, new ModificationWithMass("acetyl", "", motif, TerminusLocalization.Any, 42.011))
             });
 
              set_unmodified = new PtmSet(new List<Ptm> { new Ptm() });
