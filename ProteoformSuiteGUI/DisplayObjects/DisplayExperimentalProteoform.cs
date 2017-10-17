@@ -91,16 +91,27 @@ namespace ProteoformSuiteGUI
 
         public string ptm_description
         {
-            get { return e.ptm_description; }
+            get { return e.linked_proteoform_references != null ? e.ptm_description : ""; }
         }
 
+        public int Begin
+        {
+            get { return e.begin; }
+        }
+
+        public int End
+        {
+            get { return e.end; }
+        }
         public string gene_name
         {
             get
             {
                 return e.gene_name != null ?
+                    (e.gene_name.get_prefered_name(Lollipop.preferred_gene_label) != null ?
                     e.gene_name.get_prefered_name(Lollipop.preferred_gene_label) :
-                    "";
+                    "")
+                    :  "";
             }
         }
 
