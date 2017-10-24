@@ -75,7 +75,7 @@ namespace ProteoformSuiteInternal
             this.root = this.aggregated.OrderByDescending(a => a.intensity_sum).FirstOrDefault();
         }
 
-        public ExperimentalProteoform(string accession, IAggregatable root, bool is_target) 
+        public ExperimentalProteoform(string accession, IAggregatable root, bool is_target)
             : base(accession)
         {
             quant = new QuantitativeProteoformValues(this);

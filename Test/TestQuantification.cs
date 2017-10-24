@@ -1513,5 +1513,60 @@ namespace Test
             Assert.IsFalse(stat8.is_passing_real(-2, 4, "AND", true, 2, false, true, 2, out is_passing_relative_difference, out is_passing_fold_change));
             Assert.IsFalse(stat8.is_passing_permutation(-2, 4, "AND", true, 2, false, true, 2, out is_passing_relative_difference, out is_passing_fold_change));
         }
+
+        [Test]
+        public void test_histoneID_normalization()
+        {
+            Sweet.lollipop = new Lollipop();
+            TusherAnalysis2 tusherAnalysis2 = new TusherAnalysis2();
+            List<ExperimentalProteoform> satisfactoryProteoforms = new List<ExperimentalProteoform>();
+
+            ProteinWithGoTerms p1 = new ProteinWithGoTerms("", "T1", new List<Tuple<string, string>> { new Tuple<string, string>("", "") }, new Dictionary<int, List<Modification>>(), new List<ProteolysisProduct> { new ProteolysisProduct(0, 0, "") }, "T2", "T3", true, false, new List<DatabaseReference>(), new List<GoTerm>());
+            ProteinWithGoTerms p2 = new ProteinWithGoTerms("", "T2", new List<Tuple<string, string>> { new Tuple<string, string>("", "") }, new Dictionary<int, List<Modification>>(), new List<ProteolysisProduct> { new ProteolysisProduct(0, 0, "") }, "T2", "T3", true, false, new List<DatabaseReference>(), new List<GoTerm>());
+            ProteinWithGoTerms p3 = new ProteinWithGoTerms("", "T3", new List<Tuple<string, string>> { new Tuple<string, string>("", "") }, new Dictionary<int, List<Modification>>(), new List<ProteolysisProduct> { new ProteolysisProduct(0, 0, "") }, "T2", "T3", true, false, new List<DatabaseReference>(), new List<GoTerm>());
+            Dictionary<InputFile, Protein[]> dict = new Dictionary<InputFile, Protein[]> {
+                { new InputFile("fake.txt", Purpose.ProteinDatabase), new Protein[] { p1 } },
+                { new InputFile("fake.txt", Purpose.ProteinDatabase), new Protein[] { p2 } },
+                { new InputFile("fake.txt", Purpose.ProteinDatabase), new Protein[] { p3 } },
+            };
+
+            //only want ones that have "Histone H" to be normalized
+            TheoreticalProteoform u = ConstructorsForTesting.make_a_theoretical("T1_T1", "Dnmt3-Dna Methyltransferase", 19, p1, dict);
+            TheoreticalProteoform v = ConstructorsForTesting.make_a_theoretical("T2_T1", "Histone Acetyltransferase", 90, p1, dict);
+            TheoreticalProteoform w = ConstructorsForTesting.make_a_theoretical("T3_T1", "Histone Methyltransferase", 92, p1, dict);
+            TheoreticalProteoform x = ConstructorsForTesting.make_a_theoretical("T4_T1", "Histone H3", 57, p1, dict);
+            TheoreticalProteoform y = ConstructorsForTesting.make_a_theoretical("T5_T1", "Histone H2A", 10, p2, dict);
+            TheoreticalProteoform z = ConstructorsForTesting.make_a_theoretical("T6_T1", "Not a Histone", 30, p3, dict);
+            ExperimentalProteoform ax = ConstructorsForTesting.ExperimentalProteoform("E1");
+            ExperimentalProteoform bx = ConstructorsForTesting.ExperimentalProteoform("E2");
+            ExperimentalProteoform cx = ConstructorsForTesting.ExperimentalProteoform("E3");
+            ExperimentalProteoform dx = ConstructorsForTesting.ExperimentalProteoform("E4");
+            ExperimentalProteoform ex = ConstructorsForTesting.ExperimentalProteoform("E5");
+            ExperimentalProteoform fx = ConstructorsForTesting.ExperimentalProteoform("E6");
+
+            ConstructorsForTesting.make_relation(ax, u);
+            ConstructorsForTesting.make_relation(bx, v);
+            ConstructorsForTesting.make_relation(cx, w);
+            ConstructorsForTesting.make_relation(dx, x);
+            ConstructorsForTesting.make_relation(ex, y);
+            ConstructorsForTesting.make_relation(fx, z);
+
+            satisfactoryProteoforms.Add(ax);
+            satisfactoryProteoforms.Add(bx);
+            satisfactoryProteoforms.Add(cx);
+            satisfactoryProteoforms.Add(dx);
+            satisfactoryProteoforms.Add(ex);
+            satisfactoryProteoforms.Add(fx);
+
+            //should only normalize (dx, ex) and ignore all others, as they are not added to the HistoneID list
+            tusherAnalysis2.normalize_protoeform_intensities(satisfactoryProteoforms);
+            //decimal axvalue = ax.quant.TusherValues2.numeratorIntensitySum;
+            //get_tusher_values
+            //obtain all info gained from tusher analysis of histoneid experimental proteoforms
+            //foreach (BiorepTechrepIntensity bi in TusherAnalysis2.allOriginalBiorepIntensities)
+
+            Assert.AreEqual("", "");
+        }
+
     }
 }

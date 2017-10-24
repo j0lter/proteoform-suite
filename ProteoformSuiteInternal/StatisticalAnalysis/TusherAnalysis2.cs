@@ -36,11 +36,15 @@ namespace ProteoformSuiteInternal
             }
         }
 
-        private void normalize_protoeform_intensities(List<ExperimentalProteoform> satisfactoryProteoforms)
+        public void normalize_protoeform_intensities(List<ExperimentalProteoform> satisfactoryProteoforms)
         {
             // Make lookup of intensities by condition/biorep for normalization
             Dictionary<Tuple<string, string>, List<double>> conditionBiorep_intensities = new Dictionary<Tuple<string, string>, List<double>>();
             List<BiorepTechrepIntensity> allOriginalBiorepIntensities = satisfactoryProteoforms.SelectMany(pf => pf.quant.TusherValues2.allIntensities.Values).ToList();
+            List<BiorepTechrepIntensity> allHistoneBiorepIntensities = new List<BiorepTechrepIntensity>();
+            List<ExperimentalProteoform> HistoneID = new List<ExperimentalProteoform>();
+            String proteoformID = "";
+
             foreach (BiorepTechrepIntensity bi in allOriginalBiorepIntensities)
             {
                 Tuple<string, string> key2 = new Tuple<string, string>(bi.condition, bi.biorep);
@@ -58,6 +62,27 @@ namespace ProteoformSuiteInternal
                     (Sweet.lollipop.neucode_labeled ? conditionBiorep_sums.Where(kv => kv.Key.Item2 == bi.biorep).Average(kv => kv.Value) : conditionBiorep_sums.Average(kv => kv.Value));
                 bi.intensity_sum = bi.intensity_sum / norm_divisor;
             }
+
+            // finding all satisfactory proteoforms with Histone IDs
+            foreach (ExperimentalProteoform e in satisfactoryProteoforms)
+            {
+                proteoformID = (e.linked_proteoform_references.First() as TheoreticalProteoform).description;
+                if (proteoformID.Contains("Histone H"))
+                {
+                    HistoneID.Add(e);
+                }
+            }
+
+            allHistoneBiorepIntensities = HistoneID.SelectMany(pf => pf.quant.TusherValues2.allIntensities.Values).ToList();
+
+            // normalize based on HistoneID
+            foreach (BiorepTechrepIntensity hbi in allHistoneBiorepIntensities)
+            {
+                double hist_divisor = conditionBiorep_sums[new Tuple<string, string>(hbi.condition, hbi.biorep)] /
+                    (Sweet.lollipop.neucode_labeled ? conditionBiorep_sums.Where(kv => kv.Key.Item2 == hbi.biorep).Average(kv => kv.Value) : conditionBiorep_sums.Average(kv => kv.Value));
+                hbi.intensity_sum = hbi.intensity_sum / hist_divisor;
+            }
+
 
             // Zero-center the intensities for each proteoform
             foreach (ExperimentalProteoform pf in satisfactoryProteoforms)
