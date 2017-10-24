@@ -1560,7 +1560,7 @@ namespace Test
 
             //should only normalize (dx, ex) and ignore all others, as they are not added to the HistoneID list
             tusherAnalysis2.normalize_protoeform_intensities(satisfactoryProteoforms);
-            //decimal axvalue = ax.quant.TusherValues2.numeratorIntensitySum;
+            //ax.quant.TusherValues2.numeratorIntensitySum;
             //get_tusher_values
             //obtain all info gained from tusher analysis of histoneid experimental proteoforms
             //foreach (BiorepTechrepIntensity bi in TusherAnalysis2.allOriginalBiorepIntensities)
